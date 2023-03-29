@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.appcompat.widget.Toolbar
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="10dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+
+            <ImageView
+                android:id="@+id/back"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_centerVertical="true"
+
+                android:paddingRight="10dp"
+                android:src="@drawable/ic_back" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/back"
+                android:paddingLeft="5dp"
+                android:text="Integration Testing Page"
+                android:textColor="@color/glu_black"
+                android:textSize="24sp" />
+
+        </RelativeLayout>
+
+
+    </androidx.appcompat.widget.Toolbar>
+
+
+    <TextView
+        android:id="@+id/basic_txt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Basic Integration"
+        android:layout_marginStart="10dp"
+        android:textColor="@color/glu_black"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        android:textStyle="bold"
+        android:textSize="20dp" />
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/basic_txt"
+        android:id="@+id/testingRecyclerView"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:layout_marginTop="10dp"
+        android:id="@+id/advance_heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Advanced Integration"
+        android:layout_marginStart="10dp"
+        android:textColor="@color/glu_black"
+        app:layout_constraintTop_toBottomOf="@+id/testingRecyclerView"
+        android:textStyle="bold"
+        android:textSize="20dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/advance_heading"
+        android:id="@+id/advanceTestingRecyclerView"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <ProgressBar
+        android:id="@+id/pg"
+        android:visibility="gone"
+        android:layout_width="70dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_height="70dp"
+        android:layout_centerInParent="true" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,6 @@
+-keep class com.customerglu.sdk.Utils.*{*;}
+-keep class com.customerglu.sdk.Modal.*{*;}
+-keep class com.customerglu.sdk.custom.*{*;}
+-dontwarn com.airbnb.lottie.**
+-keep class com.airbnb.lottie.** {*;}
+-keep class com.customerglu.sdk.entrypoints.*{*;}

@@ -150,11 +150,9 @@ public class WebViewJavaScriptInterface {
                 intent.putExtra("data", me.toString());
                 activity.sendBroadcast(intent);
 
-
-                if (me.has("closeOnDeeplink")) {
-                    ctaCloseOnDeepLink = me.getString("closeOnDeeplink");
+                if (me.has("closeOnDeepLink")) {
+                    ctaCloseOnDeepLink = me.getString("closeOnDeepLink");
                 }
-
 
                 if (me.has("isHandledByCG")) {
                     if (me.getString("isHandledByCG").equalsIgnoreCase("true")) {

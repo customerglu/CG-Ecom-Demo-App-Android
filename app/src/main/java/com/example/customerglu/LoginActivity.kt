@@ -61,6 +61,13 @@ class LoginActivity : AppCompatActivity() {
         emailError = findViewById(R.id.emailError)
         passwordError = findViewById(R.id.passwordError)
         isDemoApp = intent.getBooleanExtra("demoApp",false)
+        Prefs.putKey(applicationContext,"demoApp",""+isDemoApp)
+        var key = Prefs.getKey(applicationContext,"writeKey")
+
+        if (!key.isEmpty())
+        {
+            writeKey.setText(key)
+        }
         getFcmToken()
 
         if (isDemoApp)
@@ -116,11 +123,7 @@ class LoginActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         CustomerGlu.getInstance().showEntryPoint(this,"login")
-        var key = Prefs.getKey(applicationContext,"writeKey")
-        if (!key.isEmpty())
-        {
-            writeKey.setText(key)
-        }
+
     }
 
     private val requestPermissionLauncher =
@@ -262,9 +265,14 @@ class LoginActivity : AppCompatActivity() {
             }
        // userData.put("writeKey",clientWriteKey)
 
-
+        var language = Prefs.getKey(applicationContext,"language")
+        if (language.isEmpty())
+        {
+            language = "english"
+        }
         var customAttributes:HashMap<String,Any> = HashMap<String,Any>()
         customAttributes.put("tag",signInPassword)
+        customAttributes.put("language",language)
         userData.put("customAttributes",customAttributes);
 
         if (!isDemoApp && writeKey.text.toString().trim().isEmpty())

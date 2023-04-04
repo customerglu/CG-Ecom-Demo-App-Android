@@ -3,12 +3,17 @@ package com.example.customerglu
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.customerglu.sdk.CustomerGlu
-import com.customerglu.sdk.Interface.DataListner
-import com.customerglu.sdk.Modal.RegisterModal
+import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.Extensions.toast
 import com.example.customerglu.Utils.Prefs
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.messaging.FirebaseMessaging
+import org.json.JSONException
+import org.json.JSONObject
 
 
 class SplashScreenActivity : AppCompatActivity() {
@@ -19,7 +24,7 @@ class SplashScreenActivity : AppCompatActivity() {
 
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
          userId =  Prefs.getKey(applicationContext,"userId");
-
+        getFcmToken()
         if(userId!= null && !userId!!.isEmpty()) {
             CustomerGlu.getInstance().initializeSdk(applicationContext)
         }
@@ -27,8 +32,30 @@ class SplashScreenActivity : AppCompatActivity() {
 
             checkUser()
 
+
         }, 3000)
 
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+
+        super.onNewIntent(intent)
+    }
+    private fun getFcmToken() {
+        FirebaseMessaging.getInstance().getToken()
+            .addOnCompleteListener(OnCompleteListener<String?> { task ->
+                if (!task.isSuccessful) {
+                    return@OnCompleteListener
+                }
+
+                // Get new FCM registration token
+                val token = task.result
+               var fcmToken = token
+                println("Fcm token")
+                println(token)
+
+                // Log and toast
+            })
     }
 
     private fun checkUser() {
@@ -38,36 +65,51 @@ class SplashScreenActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
-*/
-        if(userId!= null && !userId!!.isEmpty()){
-          var clientWriteKey =  Prefs.getKey(applicationContext,"writeKey")
 
-            CustomerGlu.setWriteKey(clientWriteKey)
-           CustomerGlu.getInstance().initializeSdk(applicationContext)
+
+*/
+
+        val parent_intent = intent
+        var intentSource = "none"
+        if (parent_intent != null) {
+            if (parent_intent.extras != null) {
+                intentSource = parent_intent.extras!!.getString("type", "none")
+                val myType = parent_intent.extras!!.getString("from", "none")
+                if (intentSource.equals("CustomerGlu", ignoreCase = true)) {
+                    val data = parent_intent.extras
+                    val json = JSONObject()
+                    val keys = data!!.keySet()
+                    for (key in keys) {
+                        try {
+                            json.put(key, JSONObject.wrap(data!![key]))
+                        } catch (e: JSONException) {
+                            //Handle exception here
+                        }
+                    }
+                    Handler().postDelayed({
+                        CustomerGlu.getInstance()
+                            .displayCustomerGluBackgroundNotification(applicationContext, json)
+                    },2000)
+
+                }
+            }
+        }
+        if(userId!= null && !userId!!.isEmpty())
+        {
+            var isDemoApp = Prefs.getKey(applicationContext,"demoApp")
+             var clientWriteKey =  Prefs.getKey(applicationContext,"writeKey")
+                if (isDemoApp.equals("true") )
+                {
+                    CustomerGlu.setWriteKey(Constants.sandbox_key)
+                }else {
+                    CustomerGlu.setWriteKey(clientWriteKey)
+                }
+              CustomerGlu.getInstance().initializeSdk(applicationContext)
 
            val intent = Intent(applicationContext, HomeActivity::class.java)
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             startActivity(intent)
-//            var userData:HashMap<String,Any> = HashMap<String,Any>()
-//            userData.put("userId", userId!!)
-//            CustomerGlu.getInstance()
-//                .registerDevice(applicationContext, userData, object : DataListner {
-//                    override fun onSuccess(registerModal: RegisterModal) {
-//                        intent = Intent(applicationContext, HomeActivity::class.java)
-//                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-//                        // toast("Registered")
-//                        Prefs.putKey(
-//                            applicationContext,
-//                            "userId",
-//                            registerModal.data.getUser().userId
-//                        )
-//
-//                        startActivity(intent)
-//                        finish()
-//                    }
-//
-//                    override fun onFail(message: String) {}
-//                })
+            finish()
 
         }else {
             val intent = Intent(this, LoginOptionActivity::class.java)

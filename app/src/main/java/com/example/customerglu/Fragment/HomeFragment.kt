@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.LinearLayout
@@ -140,25 +141,25 @@ class HomeFragment : Fragment() {
 //            CustomerGlu.getInstance().setDarkMode(context,isAppearanceToggled);
 //
 //        }
-        customerGlu.listenToSystemDarkMode(false)
-        if (Prefs.getKey(context,"isDarkMode").equals("true"))
-        {
-            visualSearchBtn_homePage.isChecked = true
-        }
-        visualSearchBtn_homePage.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
-            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
-                isDarkMode = false
-                Prefs.putKey(context,"isDarkMode","false");
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                customerGlu.setDarkMode(context, false)
-            } else {
-                isDarkMode = true
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                Prefs.putKey(context,"isDarkMode","true");
-                customerGlu.setDarkMode(context, true)
-            }
-        })
-
+//        customerGlu.listenToSystemDarkMode(false)
+//        if (Prefs.getKey(context,"isDarkMode").equals("true"))
+//        {
+//            visualSearchBtn_homePage.isChecked = true
+//        }
+//        visualSearchBtn_homePage.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+//            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+//                isDarkMode = false
+//                Prefs.putKey(context,"isDarkMode","false");
+//                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+//                customerGlu.setDarkMode(context, false)
+//            } else {
+//                isDarkMode = true
+//                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+//                Prefs.putKey(context,"isDarkMode","true");
+//                customerGlu.setDarkMode(context, true)
+//            }
+//        })
+        visualSearchBtn_homePage.visibility = GONE
         showLayout()
 
 

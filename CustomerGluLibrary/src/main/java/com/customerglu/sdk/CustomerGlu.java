@@ -5497,6 +5497,7 @@ public class CustomerGlu {
         Prefs.putEncKey(context, IS_LOGIN, "");
         Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID, "");
         Prefs.putEncKey(context, ANONYMOUSID, "");
+        Prefs.setEncryptionSalt(context,"");
         myThread = 0;
         cgUserData = null;
         entryPointsModel = null;

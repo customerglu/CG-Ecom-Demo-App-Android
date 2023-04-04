@@ -1,7 +1,10 @@
 package com.example.customerglu;
 
 import android.app.Application;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -9,6 +12,8 @@ import android.os.Bundle;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Interface.DataListner;
 import com.customerglu.sdk.Modal.RegisterModal;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +33,8 @@ MyApplication extends Application {
 
         // Branch object initialization
 //        Branch.getAutoInstance(this);
+
+
 
 
     }

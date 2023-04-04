@@ -274,7 +274,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                         if (contentList.get(position).isCloseOnDeepLink() != null) {
                             isClosed = contentList.get(position).isCloseOnDeepLink();
                         } else {
-                            isClosed = false;
+                            isClosed = true;
                         }
 
                         CustomerGlu.getInstance().loadPopUpBanner(mContext, data.getCampaignId(), data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);

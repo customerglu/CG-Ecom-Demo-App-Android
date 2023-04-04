@@ -75,6 +75,7 @@ class ProfileFragment : Fragment() {
     lateinit var linearLayout3:LinearLayout
     lateinit var linearLayout4:LinearLayout
     lateinit var rewards:LinearLayout
+    lateinit var language_lyt:CardView
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,6 +103,7 @@ class ProfileFragment : Fragment() {
         linearLayout3 = view.findViewById(R.id.linearLayout3)
         linearLayout4 = view.findViewById(R.id.linearLayout4)
         rewards = view.findViewById(R.id.rewards);
+        language_lyt = view.findViewById(R.id.language_lyt);
         val shippingAddressCard_ProfilePage = view.findViewById<CardView>(R.id.shippingAddressCard_ProfilePage)
         val paymentMethod_ProfilePage = view.findViewById<CardView>(R.id.paymentMethod_ProfilePage)
         val cardsNumber_profileFrag:TextView = view.findViewById(R.id.cardsNumber_profileFrag)
@@ -149,16 +151,25 @@ class ProfileFragment : Fragment() {
             uploadImage()
         }
         rewards.setOnClickListener {
-            CustomerGlu.getInstance().loadCampaignById(context,"554f74f7-4754-4899-9914-3e06aaccf17f")
+            CustomerGlu.getInstance().openWallet(context)
         }
 
         settingCd_profileFrag.setOnClickListener {
             CustomerGlu.getInstance().clearGluData(context)
             Prefs.putKey(context,"userId","")
+            Prefs.clearSharedPreferences(context)
             val intent = Intent(context, LoginOptionActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             requireActivity().finish()
+        }
+
+        language_lyt.setOnClickListener {
+
+            val intent = Intent(context, ChangeLanguageActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+
         }
 
 

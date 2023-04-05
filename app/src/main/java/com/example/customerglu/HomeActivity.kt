@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.Fragment.*
+import com.example.customerglu.Utils.Constants
 import com.example.customerglu.db.FavItemViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.delay
@@ -41,51 +42,26 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
         getWindow()?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
 
-        mMessageReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                // Extract data included in the Intent
-                try {
+       var type =  intent.getStringExtra(Constants.NavigateTo)
 
-                    Handler().postDelayed({
-                        if (intent.action.equals("CUSTOMERGLU_DEEPLINK_EVENT", ignoreCase = true)) {
-                            val data = intent.getStringExtra("data")
-                            val jsonObject = JSONObject(data)
-                            if (jsonObject.has("deepLink")) {
 
-                                var deeplink = jsonObject.get("deepLink")
-
-                                if (deeplink.equals("customerglu://profile")) {
-                                    bottomNavigationView.selectedItemId = R.id.profileMenu
-                                } else if (deeplink.equals("customerglu://cart")) {
-                                    bottomNavigationView.selectedItemId = R.id.bagMenu
-                                } else if(deeplink.equals("customerglu://wishlist"))
-                                {
-                                    bottomNavigationView.selectedItemId = R.id.favMenu
-                                }else if(deeplink.equals("customerglu://categories"))
-                                {
-                                    bottomNavigationView.selectedItemId = R.id.shopMenu
-                                }
-
-                                else {
-                                    bottomNavigationView.selectedItemId = R.id.homeMenu
-                                }
-
-                            }
-                            // Add the logic to redirect to appropriate page
-                        }
-                    }, 500)
-                } catch (e: Exception) {
-                    println(e)
-                }
-            }
-        }
-
-        registerReceiver(mMessageReceiver, IntentFilter("CUSTOMERGLU_DEEPLINK_EVENT"))
         bottomNavigationView = findViewById(R.id.bottomNavMenu)
         bottomNavigationView.setOnNavigationItemSelectedListener(this)
 
         supportFragmentManager.beginTransaction().replace(R.id.nav_fragment, HomeFragment())
             .commit()
+        if (type!= null)
+        {
+            when (type) {
+                Constants.Cart -> bottomNavigationView.selectedItemId = R.id.bagMenu
+                Constants.Profile  -> bottomNavigationView.selectedItemId = R.id.profileMenu
+                Constants.Categories  -> bottomNavigationView.selectedItemId = R.id.shopMenu
+                Constants.Wishlist  -> bottomNavigationView.selectedItemId = R.id.favMenu
+                else -> { // Note the block
+                    print("x is neither 1 nor 2")
+                }
+            }
+        }
     }
 
 

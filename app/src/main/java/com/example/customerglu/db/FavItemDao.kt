@@ -18,6 +18,9 @@ interface FavItemDao {
     @Query("DELETE FROM fav_items WHERE Product_ID = :id")
     suspend fun delete(id: String)
 
+    @Query("DELETE FROM fav_items")
+    suspend fun  deleteTable(): Int
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(vararg product: LikeProductEntity)
 }

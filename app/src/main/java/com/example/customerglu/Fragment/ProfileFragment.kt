@@ -24,6 +24,8 @@ import com.example.customerglu.ShipingAddressActivity
 import com.example.customerglu.Utils.FirebaseUtils.storageReference
 import com.example.customerglu.Utils.Prefs
 import com.example.customerglu.db.Card.CardViewModel
+import com.example.customerglu.db.CartViewModel
+import com.example.customerglu.db.FavItemViewModel
 import com.example.customerglu.loadingDialog
 
 
@@ -55,7 +57,8 @@ class ProfileFragment : Fragment() {
     lateinit var animationView: LottieAnimationView
 
     lateinit var profileImage_profileFrag: CircleImageView
-
+    private lateinit var cartViewModel: CartViewModel
+    private lateinit var favModel: FavItemViewModel
     private val PICK_IMAGE_REQUEST = 71
     private var filePath: Uri? = null
     private lateinit var loadingDialog: loadingDialog
@@ -92,6 +95,8 @@ class ProfileFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_profile, container, false)
+        favModel = ViewModelProviders.of(this).get(FavItemViewModel::class.java)
+        cartViewModel = ViewModelProviders.of(this).get(CartViewModel::class.java)
 
         profileImage_profileFrag = view.findViewById(R.id.profileImage_profileFrag)
         val settingCd_profileFrag = view.findViewById<CardView>(R.id.settingCd_profileFrag)
@@ -158,6 +163,8 @@ class ProfileFragment : Fragment() {
             CustomerGlu.getInstance().clearGluData(context)
             Prefs.putKey(context,"userId","")
             Prefs.clearSharedPreferences(context)
+            cartViewModel.deleteAll()
+            favModel.deleteAll()
             val intent = Intent(context, LoginOptionActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)

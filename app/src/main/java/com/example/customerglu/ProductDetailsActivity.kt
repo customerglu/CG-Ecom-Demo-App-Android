@@ -139,6 +139,8 @@ class ProductDetailsActivity : AppCompatActivity() {
                     favModel.deleteCart(pPid)
             }else {
                 runOnUiThread {
+                    val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
+                    CustomerGlu.getInstance().sendEvent(applicationContext,"addToWishlist",hashMap)
                     productAddToFav_singleProduct.setImageResource(R.drawable.ic_myfav)
                 }
                 if (!favModel.isExist(pPid)) {

@@ -340,6 +340,7 @@
         </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
+            android:visibility="gone"
             android:id="@+id/language_lyt"
             android:layout_width="match_parent"
             android:layout_height="70dp"

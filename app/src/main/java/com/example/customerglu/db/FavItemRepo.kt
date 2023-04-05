@@ -15,6 +15,9 @@ class FavItemRepo(private val productDao: FavItemDao) {
     suspend fun update(product: LikeProductEntity) {
         productDao.update(product)
     }
+    suspend fun deleteAll() {
+        productDao.deleteTable()
+    }
       fun  isExist(id: String): Boolean {
        if ( productDao.isItemExist(id))
        {

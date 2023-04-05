@@ -30,6 +30,9 @@ class FavItemViewModel(application: Application) : AndroidViewModel(application)
     fun updateCart(product: LikeProductEntity) = viewModelScope.launch(Dispatchers.IO) {
         repository.update(product)
     }
+    fun deleteAll() = viewModelScope.launch(Dispatchers.IO) {
+        repository.deleteAll()
+    }
     fun isExist(id: String):Boolean {
         if (repository.isExist(id))
         {

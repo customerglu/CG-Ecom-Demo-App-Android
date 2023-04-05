@@ -255,8 +255,8 @@ public class CustomerGlu {
     public static String cg_sdk_version = "2.3.2";
     private static String writeKey = "";
     public static boolean debugEnvironment = false;
-    public static String darkStatusBarColor;
-    public static String lightStatusBarColor;
+    public static String darkStatusBarColor="";
+    public static String lightStatusBarColor="";
     public static String clientId;
     public static DiagnosticsHelper diagnosticsHelper;
     public static boolean isDiagnosticsEnabled = false;

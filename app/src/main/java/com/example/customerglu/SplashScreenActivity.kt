@@ -96,7 +96,7 @@ class SplashScreenActivity : AppCompatActivity() {
         }
         if(userId!= null && !userId!!.isEmpty())
         {
-            var isDemoApp = Prefs.getKey(applicationContext,"demoApp")
+             var isDemoApp = Prefs.getKey(applicationContext,"demoApp")
              var clientWriteKey =  Prefs.getKey(applicationContext,"writeKey")
                 if (isDemoApp.equals("true") )
                 {
@@ -105,7 +105,7 @@ class SplashScreenActivity : AppCompatActivity() {
                     CustomerGlu.setWriteKey(clientWriteKey)
                 }
               CustomerGlu.getInstance().initializeSdk(applicationContext)
-
+            CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
            val intent = Intent(applicationContext, HomeActivity::class.java)
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             startActivity(intent)

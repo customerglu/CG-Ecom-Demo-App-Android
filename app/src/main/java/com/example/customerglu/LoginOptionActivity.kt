@@ -41,6 +41,7 @@ class LoginOptionActivity :AppCompatActivity() {
             intent.putExtra("demoApp",false)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
+            finish()
         }
 
         exp_demo_app.setOnClickListener {
@@ -48,6 +49,7 @@ class LoginOptionActivity :AppCompatActivity() {
             intent.putExtra("demoApp",true)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
+            finish()
         }
         visualSearchBtn_homePage.setOnClickListener {
             if (ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.CAMERA)

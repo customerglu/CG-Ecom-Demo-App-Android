@@ -10,6 +10,7 @@ import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +20,7 @@ import com.customerglu.sdk.CustomerGlu
 import com.customerglu.sdk.Interface.DataListner
 import com.customerglu.sdk.Modal.RegisterModal
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.Utils.Extensions.toast
 import com.example.customerglu.Utils.FirebaseUtils.firebaseAuth
 import com.example.customerglu.Utils.Prefs
@@ -43,6 +45,7 @@ class LoginActivity : AppCompatActivity() {
     lateinit var writekey_lyt:LinearLayout
     lateinit var passwordError:TextView
     lateinit var qr_scanner:ImageView
+    lateinit var progressBar:ProgressBar
 
 
 
@@ -55,11 +58,12 @@ class LoginActivity : AppCompatActivity() {
         signInBtn = findViewById(R.id.loginBtn)
         qr_scanner = findViewById(R.id.qr_scanner)
         writekey_lyt = findViewById(R.id.writeKey_lyt)
-        emailEt = findViewById(R.id.emailEt)
-        passEt = findViewById(R.id.PassEt)
+        emailEt = findViewById(R.id.userId_edt)
+        passEt = findViewById(R.id.tag_edt)
         writeKey = findViewById(R.id.writeKey)
         emailError = findViewById(R.id.emailError)
         passwordError = findViewById(R.id.passwordError)
+        progressBar = findViewById(R.id.pg_view)
         isDemoApp = intent.getBooleanExtra("demoApp",false)
         Prefs.putKey(applicationContext,"demoApp",""+isDemoApp)
         var key = Prefs.getKey(applicationContext,"writeKey")
@@ -74,7 +78,7 @@ class LoginActivity : AppCompatActivity() {
         {
             CustomerGlu.setWriteKey(Constants.sandbox_key)
             writekey_lyt.visibility = GONE
-            CustomerGlu.getInstance().initializeSdk(applicationContext)
+            CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
         }
 
         qr_scanner.setOnClickListener {
@@ -94,9 +98,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
         signInBtn.setOnClickListener {
+
             checkInput()
-
-
 
         }
 
@@ -122,7 +125,7 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(this,"login")
+        CustomerGluManager.setClassNameForCG(this,"login")
 
     }
 
@@ -239,6 +242,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun checkInput() {
+      //  progressBar.visibility = VISIBLE
 
 //        if (emailEt.text.isEmpty()){
 //            emailError.visibility = View.VISIBLE
@@ -249,6 +253,11 @@ class LoginActivity : AppCompatActivity() {
         var clientWriteKey:String
             signInEmail = emailEt.text.toString().trim()
             signInPassword = passEt.text.toString().trim()
+
+        if (signInEmail.isEmpty())
+        {
+            toast("Please enter userId")
+        }
 
 
             var userData:HashMap<String,Any> = HashMap<String,Any>()
@@ -277,31 +286,37 @@ class LoginActivity : AppCompatActivity() {
 
         if (!isDemoApp && writeKey.text.toString().trim().isEmpty())
         {
-
                 toast("Please Enter WriteKey")
             return
 
         }
 
             Prefs.putKey(applicationContext,"writeKey",clientWriteKey)
-            CustomerGlu.getInstance().initializeSdk(applicationContext)
-            CustomerGlu.getInstance()
-                .registerDevice(applicationContext, userData, object : DataListner {
-                    override fun onSuccess(registerModal: RegisterModal) {
-                        intent = Intent(applicationContext, HomeActivity::class.java)
-                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                        // toast("Registered")
-                        Prefs.putKey(
-                            applicationContext,
-                            "userId",
-                            registerModal.data.getUser().userId
-                        )
+//            CustomerGlu.getInstance().initializeSdk(applicationContext)
+        CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
 
-                        startActivity(intent)
-                    }
-
-                    override fun onFail(message: String) {}
-                })
+           CustomerGluManager.registerUser(context = applicationContext,userData)
+//            CustomerGlu.getInstance()
+//                .registerDevice(applicationContext, userData, object : DataListner {
+//                    override fun onSuccess(registerModal: RegisterModal) {
+//                    //    progressBar.visibility = GONE
+//                        intent = Intent(applicationContext, HomeActivity::class.java)
+//                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+//                        // toast("Registered")
+//                        Prefs.putKey(
+//                            applicationContext,
+//                            "userId",
+//                            registerModal.data.getUser().userId
+//                        )
+//
+//                        startActivity(intent)
+//                    }
+//
+//                    override fun onFail(message: String) {
+//                        toast(message)
+//                        progressBar.visibility = GONE
+//                    }
+//                })
 
 
 

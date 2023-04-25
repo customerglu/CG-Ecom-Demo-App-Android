@@ -66,9 +66,7 @@ public class ApiClients {
                 Request.Builder requestBuilder = original.newBuilder()
                         .addHeader("Accept", "application/json")
                         .header("Content-Type", "application/json")
-                        .addHeader("cg-sdk-version", CustomerGlu.cg_sdk_version)
-                        .addHeader("cg-sdk-platform", CustomerGlu.cg_app_platform);
-
+                        .addHeader("cg-sdk-version", "2.3.4");
                 Request request = requestBuilder.build();
                 return chain.proceed(request);
             }

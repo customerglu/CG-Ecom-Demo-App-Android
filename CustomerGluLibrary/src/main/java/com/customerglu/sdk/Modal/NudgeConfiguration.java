@@ -8,7 +8,16 @@ public class NudgeConfiguration {
     String layout = "";
     double absoluteHeight = 0;
     double relativeHeight = 0;
+    Boolean hyperlink = false;
 
+
+    public Boolean isHyperlink() {
+        return hyperlink;
+    }
+
+    public void setHyperlink(Boolean hyperlink) {
+        this.hyperlink = hyperlink;
+    }
 
     public boolean isCloseOnDeepLink() {
         return closeOnDeepLink;

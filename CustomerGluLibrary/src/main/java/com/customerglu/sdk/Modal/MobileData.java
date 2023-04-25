@@ -336,21 +336,10 @@ public class MobileData {
         Double absoluteHeight;
         Double relativeHeight;
         Boolean closeOnDeepLink;
+        ActionData action;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Content)) return false;
-            Content content = (Content) o;
-            return Objects.equals(getType(), content.getType()) && Objects.equals(getOpenLayout(), content.getOpenLayout()) && Objects.equals(getCampaignId(), content.getCampaignId()) && Objects.equals(getUrl(), content.getUrl()) && Objects.equals(getLightUrl(), content.getLightUrl()) && Objects.equals(getDarkUrl(), content.getDarkUrl()) && Objects.equals(getAbsoluteHeight(), content.getAbsoluteHeight()) && Objects.equals(getRelativeHeight(), content.getRelativeHeight()) && Objects.equals(getCloseOnDeepLink(), content.getCloseOnDeepLink()) && Objects.equals(get_id(), content.get_id());
-        }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(getType(), getOpenLayout(), getCampaignId(), getUrl(), getLightUrl(), getDarkUrl(), getAbsoluteHeight(), getRelativeHeight(), getCloseOnDeepLink(), get_id());
-        }
-
-        public Content(String type, String openLayout, String campaignId, String url, String lightUrl, String darkUrl, Double absoluteHeight, Double relativeHeight, boolean closeOnDeepLink, String _id) {
+        public Content(String type, String openLayout, String campaignId, String url, String lightUrl, String darkUrl, Double absoluteHeight, Double relativeHeight, boolean closeOnDeepLink, String _id, ActionData action) {
             this.type = type;
             this.openLayout = openLayout;
             this.campaignId = campaignId;
@@ -361,6 +350,15 @@ public class MobileData {
             this.relativeHeight = relativeHeight;
             this.closeOnDeepLink = closeOnDeepLink;
             this._id = _id;
+            this.action = action;
+        }
+
+        public ActionData getAction() {
+            return action;
+        }
+
+        public void setAction(ActionData action) {
+            this.action = action;
         }
 
         public String getLightUrl() {
@@ -459,6 +457,42 @@ public class MobileData {
 
         public void setUrl(String url) {
             this.url = url;
+        }
+    }
+
+    public static class ActionData {
+        String type;
+        String url;
+        Boolean isHandledBySDK;
+
+        public ActionData(String type, String url, Boolean isHandledBySDK) {
+            this.type = type;
+            this.url = url;
+            this.isHandledBySDK = isHandledBySDK;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public Boolean isHandledBySDK() {
+            return isHandledBySDK;
+        }
+
+        public void setHandledBySDK(Boolean handledBySDK) {
+            isHandledBySDK = handledBySDK;
         }
     }
 

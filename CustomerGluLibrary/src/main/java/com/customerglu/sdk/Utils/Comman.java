@@ -1,5 +1,7 @@
 package com.customerglu.sdk.Utils;
 
+import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -13,6 +15,8 @@ import com.customerglu.sdk.ApiServices.ApiClients;
 import com.customerglu.sdk.ApiServices.ApiInterface;
 import com.customerglu.sdk.CustomerGlu;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -101,6 +105,19 @@ public class Comman {
         if (CustomerGlu.debuggingMode) {
             Log.e(TAG, message);
         }
+    }
+
+    public static boolean isJSONValid(String test) {
+        try {
+            new JSONObject(test);
+        } catch (JSONException ex) {
+            try {
+                new JSONArray(test);
+            } catch (JSONException ex1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean checkAnonymousUser(Context context) {
@@ -210,9 +227,10 @@ public class Comman {
                 }
                 if (CustomerGlu.whiteListDomain != null && CustomerGlu.whiteListDomain.size() > 0) {
                     for (int i = 0; i < CustomerGlu.whiteListDomain.size(); i++) {
-
-                        if (!CustomerGlu.whiteListDomain.get(i).isEmpty() && host.endsWith(CustomerGlu.whiteListDomain.get(i))) {
-                            return url;
+                        if (CustomerGlu.whiteListDomain.get(i) != null) {
+                            if (!CustomerGlu.whiteListDomain.get(i).isEmpty() && host.endsWith(CustomerGlu.whiteListDomain.get(i))) {
+                                return url;
+                            }
                         }
                     }
                 }
@@ -225,42 +243,10 @@ public class Comman {
         }
         int errorCode = CustomerGlu.errorCodeForDomain;
         String errorMessage = CustomerGlu.errorMessageForDomain;
-        return "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + errorCode + "&message=" + errorMessage;
+        return ERROR_URL;
 
     }
-//
-//    public static String encrypt(Context context, String plaintext) throws Exception {
-//        try {
-//            String secret = Prefs.getKey(context, "secret");
-//            SecretKeySpec spec = generateSecretKey(secret);
-//            Cipher cipher = Cipher.getInstance("AES");
-//            cipher.init(Cipher.ENCRYPT_MODE, spec);
-//            byte[] cipherText = cipher.doFinal(plaintext.getBytes());
-//            return Base64.encodeToString(cipherText, Base64.DEFAULT);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return "";
-//        }
-//    }
-//
-//    private static SecretKeySpec generateSecretKey(String password) {
-//        try {
-//
-//            final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-//            byte[] bytes = password.getBytes(StandardCharsets.UTF_8);
-//            messageDigest.update(bytes, 0, bytes.length);
-//            byte[] key = messageDigest.digest();
-//            SecretKeySpec spec = new SecretKeySpec(key, "AES");
-//            return spec;
-//
-//        } catch (Exception e) {
-//
-//            e.printStackTrace();
-//            return null;
-//
-//        }
-//
-//    }
+
 
     private static SecretKey generateAESSecretKey(String password) {
         try {
@@ -278,6 +264,7 @@ public class Comman {
         }
 
     }
+
 
     public static void handleDeepLinkUri(Uri uri) {
 

@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.airbnb.lottie.LottieAnimationView
 import com.customerglu.sdk.CustomerGlu
+import com.example.customerglu.Utils.CustomerGluManager
 
 class PaymentSuccessActivity:AppCompatActivity() {
     lateinit var imageView4:ImageView
@@ -20,7 +21,7 @@ class PaymentSuccessActivity:AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(this,"SuccessPage");
+        CustomerGluManager.setClassNameForCG(this,"SuccessPage");
 
     }
 
@@ -51,7 +52,7 @@ class PaymentSuccessActivity:AppCompatActivity() {
         checkOut_BagPage.visibility = View.VISIBLE
         animationView.visibility = View.GONE
         val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
-        CustomerGlu.getInstance().sendEvent(applicationContext,"orderPlaced",hashMap)
+        CustomerGluManager.sendEventsToCG(applicationContext,"orderPlaced",hashMap)
     }
 
     private fun hideLayouts() {

@@ -28,6 +28,7 @@ import com.example.customerglu.R
 
 import com.example.customerglu.AddAddressActivity
 import com.example.customerglu.PaymentActivity
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.db.CartViewModel
 import com.example.customerglu.db.ProductEntity
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -129,7 +130,7 @@ class BagFragment : Fragment(), AddToCartAdapter.CartItemClickAdapter {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(activity,"Cart");
+        CustomerGluManager.setClassNameForCG(requireActivity(),"Cart");
 
     }
 

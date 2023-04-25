@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.Utils.Extensions.toast
 import com.example.customerglu.Utils.Prefs
 import com.google.android.gms.tasks.OnCompleteListener
@@ -26,7 +27,9 @@ class SplashScreenActivity : AppCompatActivity() {
          userId =  Prefs.getKey(applicationContext,"userId");
         getFcmToken()
         if(userId!= null && !userId!!.isEmpty()) {
-            CustomerGlu.getInstance().initializeSdk(applicationContext)
+            CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
+
+//            CustomerGlu.getInstance().initializeSdk(applicationContext)
         }
         Handler().postDelayed({
 
@@ -67,44 +70,48 @@ class SplashScreenActivity : AppCompatActivity() {
         }
 
 
+
 */
 
-        val parent_intent = intent
-        var intentSource = "none"
-        if (parent_intent != null) {
-            if (parent_intent.extras != null) {
-                intentSource = parent_intent.extras!!.getString("type", "none")
-                val myType = parent_intent.extras!!.getString("from", "none")
-                if (intentSource.equals("CustomerGlu", ignoreCase = true)) {
-                    val data = parent_intent.extras
-                    val json = JSONObject()
-                    val keys = data!!.keySet()
-                    for (key in keys) {
-                        try {
-                            json.put(key, JSONObject.wrap(data!![key]))
-                        } catch (e: JSONException) {
-                            //Handle exception here
-                        }
-                    }
-                    Handler().postDelayed({
-                        CustomerGlu.getInstance()
-                            .displayCustomerGluBackgroundNotification(applicationContext, json)
-                    },2000)
+//        val parent_intent = intent
+//        var intentSource = "none"
+//        if (parent_intent != null) {
+//            if (parent_intent.extras != null) {
+//                intentSource = parent_intent.extras!!.getString("type", "none")
+//                val myType = parent_intent.extras!!.getString("from", "none")
+//                if (intentSource.equals("CustomerGlu", ignoreCase = true)) {
+//                    val data = parent_intent.extras
+//                    val json = JSONObject()
+//                    val keys = data!!.keySet()
+//                    for (key in keys) {
+//                        try {
+//                            json.put(key, JSONObject.wrap(data!![key]))
+//                        } catch (e: JSONException) {
+//                            //Handle exception here
+//                        }
+//                    }
+//                    Handler().postDelayed({
+//                        CustomerGlu.getInstance()
+//                            .displayCustomerGluBackgroundNotification(applicationContext, json)
+//                    },2000)
+//
+//                }
+//            }
+//        }
 
-                }
-            }
-        }
+        CustomerGluManager.displayCGBackgroundNotification(this)
         if(userId!= null && !userId!!.isEmpty())
         {
              var isDemoApp = Prefs.getKey(applicationContext,"demoApp")
              var clientWriteKey =  Prefs.getKey(applicationContext,"writeKey")
-                if (isDemoApp.equals("true") )
-                {
+                  if (isDemoApp.equals("true") )
+                 {
                     CustomerGlu.setWriteKey(Constants.sandbox_key)
-                }else {
+                 }else {
                     CustomerGlu.setWriteKey(clientWriteKey)
-                }
-              CustomerGlu.getInstance().initializeSdk(applicationContext)
+                 }
+            CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
+            //  CustomerGlu.getInstance().initializeSdk(applicationContext)
             CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
            val intent = Intent(applicationContext, HomeActivity::class.java)
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)

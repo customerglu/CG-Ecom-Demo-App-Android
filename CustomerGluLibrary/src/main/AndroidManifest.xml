@@ -53,7 +53,6 @@
         <activity
             android:name="com.customerglu.sdk.Web.FilterReward"
             android:theme="@style/Theme.Transparent" />
-        <activity android:name=".clienttesting.ClientTestingPage" />
 
         <provider
             android:name=".Utils.CGFileProvider"

@@ -24,34 +24,11 @@ public class CGConstants {
         EXCEPTION
     }
 
-    public enum TEST_STATE {
-        IN_PROGRESS,
-        SUCCESS,
-        FAILURE
-    }
-
-    public enum TEST_TYPE {
-        BASIC,
-        ADVANCED
-    }
-
-    // Client Test Page Constants
-    public static final String SDK_INITIALISED = "SDK Initialised";
-    public static final String USER_REGISTERED = "User Registered";
-    public static final String CALLBACK_HANDLING = "Callback Handling";
-    public static final String NUDGE_HANDLING = "Nudge Handling";
-    public static final String ONE_LINK_HANDLING = "OneLink Handling";
-    public static final String SENDING_EVENTS = "Sending Events";
-    public static final String ENTRY_POINTS_SET_UP = "EntryPoints Set up";
-    public static final String ENTRY_POINTS_SCREEN_SET_UP = "ScreenName Added";
-    public static final String ENTRY_POINTS_BANNER_ID_SET_UP = "BannerId Added";
-    public static final String ENTRY_POINTS_EMBED_ID_SET_UP = "EmbedId Added";
-
 
     public static final String CG_PLATFORM_VALUE = "android-native-sdk";
     public static final String CG_PLATFORM_KEY = "cg-app-platform";
     public static final String CG_SDK_VERSION_KEY = "cg-sdk-version";
-    public static final String CG_SDK_VERSION_VAL = "2.3.2";
+    public static final String CG_SDK_VERSION_VAL = "2.3.4";
     public static final String MQTT_SERVER_HOST = "hermes.customerglu.com";
     public static final String DEV_MQTT_SERVER_HOST = "dev-hermes.customerglu.com";
 
@@ -61,6 +38,19 @@ public class CGConstants {
         EMBED_LIGHT,
         EMBED_DARK
     }
+
+
+    // One Link DEEPLINK SUPPORT
+
+    public static final String OPEN_CAMPAIGN = "OPEN_CAMPAIGN";
+    public static final String OPEN_WALLET = "OPEN_WALLET";
+    public static final String OPEN_DEEPLINK = "OPEN_DEEPLINK";
+    public static final String OPEN_WEBLINK = "OPEN_WEBLINK";
+    public static final String CG_GLU_US = "cglu.us";
+
+    // Error page URl
+
+    public static final String ERROR_URL = "https://constellation.customerglu.com/error.html";
 
     //Diagnostics constants
     public static final String CG_DIAGNOSTICS_INIT_START = "CGDiagnostics - SDK Init Start";
@@ -127,7 +117,6 @@ public class CGConstants {
     public static final String FLUTTER = "FLUTTER";
     public static final String REACT_NATIVE = "REACT_NATIVE";
     public static final String ENTRYPOINT = "ENTRYPOINT";
-    public static final String TEST_INTEGRATION = "TEST_INTEGRATION";
     public static final String NO_INTERNET = "No Internet Connection";
     public static final String EXCEPTION = "CustomerGlu Exception:";
     public static final String CGLU = ".cglu.";
@@ -182,6 +171,8 @@ public class CGConstants {
             "}";
     public static final String URL_REGEX = "[(http(s)?):\\/\\/(www\\.)?a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)";
     public static String register_response = "";
+
     public static String load_campaign_response = "";
+
 
 }

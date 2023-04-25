@@ -17,7 +17,7 @@ class MyApplication: Application()
     override fun onCreate() {
         super.onCreate()
 
-        mMessageReceiver = object : BroadcastReceiver() {
+ /*       mMessageReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 // Extract data included in the Intent
                 try {
@@ -62,14 +62,8 @@ class MyApplication: Application()
 
         registerReceiver(mMessageReceiver, IntentFilter("CUSTOMERGLU_DEEPLINK_EVENT"))
 
-
+*/
     }
 
-    private fun navigateToActivity(screen: String?) {
-        val intent  = Intent(applicationContext,HomeActivity::class.java)
-        intent.putExtra(Constants.NavigateTo,screen)
-        intent.flags = FLAG_ACTIVITY_CLEAR_TASK
-        intent.flags = FLAG_ACTIVITY_NEW_TASK
-        startActivity(intent)
-    }
+
 }

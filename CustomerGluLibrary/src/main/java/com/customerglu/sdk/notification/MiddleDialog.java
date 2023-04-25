@@ -124,10 +124,16 @@ public class MiddleDialog extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.middle_dialog);
-        startTimer();
-        progressLottieView = findViewById(R.id.lottie_view);
-        setupProgressView(progressLottieView);
-        startLottieProgressView();
+        findViews();
+        if (getIntent().getStringExtra("isHyperLink") != null && getIntent().getStringExtra("isHyperLink").equalsIgnoreCase("true")) {
+
+            progressLottieView.setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
+        } else {
+            startTimer();
+            setupProgressView(progressLottieView);
+            startLottieProgressView();
+        }
         if (CustomerGlu.isDarkModeEnabled(getApplicationContext())) {
             darkMode = "darkMode=true";
         }
@@ -205,7 +211,7 @@ public class MiddleDialog extends BaseActivity {
 
             }
             finalData.put("webview_layout", CGConstants.MIDDLE_POPUP);
-            findViews();
+            setUpWebView();
         } catch (Exception e) {
             printErrorLogs(e.toString());
         }
@@ -239,18 +245,24 @@ public class MiddleDialog extends BaseActivity {
 //        mediaPlayer.start();
 //    }
 
-    @SuppressLint("SetJavaScriptEnabled")
     private void findViews() {
         webView = findViewById(R.id.web_notification);
         pg = findViewById(R.id.pg);
         card = findViewById(R.id.card);
-        String color;
-        color = CustomerGlu.configure_loader_color;
-        if (color.isEmpty()) {
-            color = "#FF000000";
-        }
-        pg.getIndeterminateDrawable().setColorFilter(Color.parseColor(color), PorterDuff.Mode.MULTIPLY);
+        progressLottieView = findViewById(R.id.lottie_view);
+    }
 
+    @SuppressLint("SetJavaScriptEnabled")
+    private void setUpWebView() {
+
+        int color;
+        try {
+            color = Color.parseColor(CustomerGlu.configure_loader_color);
+            // color is a valid color
+        } catch (IllegalArgumentException ex) {
+            color = Color.parseColor("#65DCAB");
+        }
+        pg.getIndeterminateDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
         main = findViewById(R.id.main);
 
         if (!CustomerGlu.configure_loading_screen_color.isEmpty()) {
@@ -304,8 +316,9 @@ public class MiddleDialog extends BaseActivity {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-        webView.loadUrl(validateURL(url + darkMode));
 
+        webView.loadUrl(validateURL(url + darkMode));
+        
     }
 
 }

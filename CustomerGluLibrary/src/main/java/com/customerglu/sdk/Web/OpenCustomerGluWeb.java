@@ -411,15 +411,17 @@ public class OpenCustomerGluWeb extends BaseActivity {
         }
 
         pg = findViewById(R.id.pg);
-        String color;
-        color = CustomerGlu.configure_loader_color;
-        if (color.isEmpty()) {
-            color = "#FF000000";
+        int color;
+        try {
+            color = Color.parseColor(CustomerGlu.configure_loader_color);
+            // color is a valid color
+        } catch (IllegalArgumentException ex) {
+            color = Color.parseColor("#65DCAB");
         }
-        pg.getIndeterminateDrawable().setColorFilter(Color.parseColor(color), PorterDuff.Mode.MULTIPLY);
+        pg.getIndeterminateDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
         //  web = CustomerGlu.webView;
         printErrorLogs("WebEvents CGWebClient");
-        web.setWebContentsDebuggingEnabled(true);
+
         web.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(true);

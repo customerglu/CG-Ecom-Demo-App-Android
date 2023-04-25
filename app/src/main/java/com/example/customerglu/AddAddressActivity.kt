@@ -8,6 +8,7 @@ import android.widget.RelativeLayout
 import androidx.lifecycle.ViewModelProviders
 import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.R
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.db.CartViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
@@ -20,7 +21,7 @@ class AddAddressActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(this,"Address")
+        CustomerGluManager.setClassNameForCG(this,"Address")
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -3,10 +3,15 @@ package com.customerglu.sdk.Adapters;
 import static android.view.View.GONE;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,9 +28,12 @@ import com.bumptech.glide.Glide;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Modal.EntryPointsData;
 import com.customerglu.sdk.Modal.MobileData;
+import com.customerglu.sdk.Modal.NudgeConfiguration;
 import com.customerglu.sdk.R;
 import com.customerglu.sdk.Utils.Comman;
 import com.customerglu.sdk.Utils.Prefs;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -274,11 +282,53 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                         if (contentList.get(position).isCloseOnDeepLink() != null) {
                             isClosed = contentList.get(position).isCloseOnDeepLink();
                         } else {
-                            isClosed = true;
+                            isClosed = false;
                         }
 
-                        CustomerGlu.getInstance().loadPopUpBanner(mContext, data.getCampaignId(), data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);
-                        //  CustomerGlu.getInstance().loadCampaignById(mContext, data.getCampaignId());
+                        if (contentList.get(position).getAction() != null) {
+                            switch (contentList.get(position).getAction().getType()) {
+                                case OPEN_DEEPLINK:
+                                    if (contentList.get(position).getAction().getUrl() != null && !contentList.get(position).getAction().getUrl().isEmpty()) {
+                                        try {
+                                            JSONObject dataObject = new JSONObject();
+                                            dataObject.put("deepLink", contentList.get(position).getAction().getUrl());
+
+                                            Intent intent = new Intent("CUSTOMERGLU_DEEPLINK_EVENT");
+                                            intent.putExtra("data", dataObject.toString());
+                                            mContext.sendBroadcast(intent);
+
+                                            if (contentList.get(position).getAction().isHandledBySDK() != null && contentList.get(position).getAction().isHandledBySDK()) {
+                                                Uri uri = Uri.parse(contentList.get(position).getAction().getUrl());
+                                                Intent actionIntent = new Intent(Intent.ACTION_VIEW);
+                                                actionIntent.setData(uri);
+                                                mContext.startActivity(intent);
+                                            }
+                                        } catch (Exception e) {
+                                            Log.e("CUSTOMERGLU", "" + e);
+                                        }
+                                    }
+                                    break;
+                                case OPEN_WEBLINK:
+                                    NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+                                    nudgeConfiguration.setRelativeHeight(relativeHeight);
+                                    nudgeConfiguration.setAbsoluteHeight(absoluteHeight);
+                                    nudgeConfiguration.setLayout(data.getOpenLayout());
+                                    nudgeConfiguration.setCloseOnDeepLink(isClosed);
+                                    nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
+                                    nudgeConfiguration.setHyperlink(true);
+                                    if (contentList.get(position).getAction().getUrl() != null && !contentList.get(position).getAction().getUrl().isEmpty()) {
+                                        CustomerGlu.getInstance().displayCGNudge(mContext, contentList.get(position).getAction().getUrl(), nudgeConfiguration);
+                                    }
+                                    break;
+
+                                default:
+                                    CustomerGlu.getInstance().loadPopUpBanner(mContext, data.getCampaignId(), data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);
+                            }
+                        } else {
+                            CustomerGlu.getInstance().loadPopUpBanner(mContext, data.getCampaignId(), data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);
+
+                        }
+
                     }
                 }
             });
@@ -327,6 +377,11 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
 
 
         }
+
+    }
+
+    private void openWeblink(Context mContext, NudgeConfiguration nudgeConfiguration) {
+
 
     }
 

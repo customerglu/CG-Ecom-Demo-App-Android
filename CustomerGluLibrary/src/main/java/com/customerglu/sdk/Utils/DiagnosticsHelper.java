@@ -128,27 +128,26 @@ public class DiagnosticsHelper {
             String body = gson.toJson(cgLoggingEventModel);
             printDebugLogs(event_name + body);
             if (!write_key.equalsIgnoreCase("")) {
-                Comman.getApiToken().sendDiagnosticsEvent(write_key, cgLoggingEventModel)
-                        .enqueue(new Callback<RegisterModal>() {
-                            @Override
-                            public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
-                                try {
-                                    if (response.code() == 200) {
-                                        printDebugLogs(event_name + "Log sent");
-                                    }
-
-                                } catch (Exception ex) {
-                                    printDebugLogs(ex.toString());
-                                }
+                CGAPIHelper.enqueueWithRetry(Comman.getApiToken().sendDiagnosticsEvent(write_key, cgLoggingEventModel), new Callback<RegisterModal>() {
+                    @Override
+                    public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
+                        try {
+                            if (response.code() == 200) {
+                                printDebugLogs(event_name + "Log sent");
                             }
 
+                        } catch (Exception ex) {
+                            printDebugLogs(ex.toString());
+                        }
+                    }
 
-                            @Override
-                            public void onFailure(Call<RegisterModal> call, Throwable t) {
+
+                    @Override
+                    public void onFailure(Call<RegisterModal> call, Throwable t) {
 
 
-                            }
-                        });
+                    }
+                });
 
             }
         } catch (Exception e) {

@@ -73,9 +73,12 @@ import static com.customerglu.sdk.Utils.CGConstants.LIGHT_LOTTIE_FILE_NAME;
 import static com.customerglu.sdk.Utils.CGConstants.LOTTIE_FILE;
 import static com.customerglu.sdk.Utils.CGConstants.MQTT_IDENTIFIER;
 import static com.customerglu.sdk.Utils.CGConstants.NOTIFICATION_LOAD;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.CGConstants.POPUP_DATE;
 import static com.customerglu.sdk.Utils.CGConstants.PUSH_NOTIFICATION_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.REACT_NATIVE;
+import static com.customerglu.sdk.Utils.Comman.isJSONValid;
 import static com.customerglu.sdk.Utils.Comman.isValidColor;
 import static com.customerglu.sdk.Utils.Comman.isValidURL;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
@@ -108,6 +111,7 @@ import android.os.Environment;
 import android.text.Html;
 import android.util.Base64;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.URLUtil;
@@ -135,6 +139,7 @@ import com.customerglu.sdk.Modal.RewardModel;
 import com.customerglu.sdk.Modal.ScreenListModal;
 import com.customerglu.sdk.Modal.ScreenListResponseModel;
 import com.customerglu.sdk.Screens.RewardScreen;
+import com.customerglu.sdk.Utils.CGAPIHelper;
 import com.customerglu.sdk.Utils.CGConstants;
 import com.customerglu.sdk.Utils.Comman;
 import com.customerglu.sdk.Utils.CryptoreUtils;
@@ -143,7 +148,6 @@ import com.customerglu.sdk.Utils.Prefs;
 import com.customerglu.sdk.Utils.SentryHelper;
 import com.customerglu.sdk.Web.FilterReward;
 import com.customerglu.sdk.Web.OpenCustomerGluWeb;
-import com.customerglu.sdk.clienttesting.ClientTestingPage;
 import com.customerglu.sdk.entrypoints.EntryPointManager;
 import com.customerglu.sdk.mqtt.CGMqttClientHelper;
 import com.customerglu.sdk.notification.BottomDialog;
@@ -198,7 +202,7 @@ public class CustomerGlu {
     public static boolean isAnalyticsEventEnabled = false;
     public static boolean auto_close_webview = false;
     public static String currentScreenName = "";
-    public static String configure_loader_color = "#000000";
+    public static String configure_loader_color = "#65DCAB";
     public static String configure_status_bar_color = "#FFFFFF";
     public static String configure_loading_screen_color = "#FFFFFF";
     public static String configure_banner_default_url = "";
@@ -252,7 +256,7 @@ public class CustomerGlu {
     List<String> popupallowedList;
     public static String dismiss_trigger = "UI_BUTTON";
     public static String cg_app_platform = "ANDROID";
-    public static String cg_sdk_version = "2.3.2";
+    public static String cg_sdk_version = "2.3.4";
     private static String writeKey = "";
     public static boolean debugEnvironment = false;
     public static String darkStatusBarColor="";
@@ -262,10 +266,10 @@ public class CustomerGlu {
     public static boolean isDiagnosticsEnabled = false;
     public static boolean isMetricsEnabled = true;
     public static boolean isCrashLoggingEnabled = true;
-    static Disposable mqttBusDisposable;
+    public static boolean allowAnonymousRegistration = false;
     public static boolean isMqttEnabled = false;
     public static boolean isMqttConnected = false;
-    public static String clientDeeplinkUrl = "";
+    public static int apiRetryCount = 3;
 
 
     private CustomerGlu() {
@@ -329,10 +333,6 @@ public class CustomerGlu {
             return null;
         }).subscribeOn(Schedulers.computation()).subscribe();
 
-
-        // RxBus listener implementation.
-
-
     }
 
 
@@ -342,43 +342,6 @@ public class CustomerGlu {
         showEntryPoint(activity);
     }
 
-/*
-    public static void initializeSdk(Context context, CGConstants.SDK_ENV sdkEnv) {
-        globalContext = context;
-        isInitialized = true;
-        switch (sdkEnv) {
-            case DEBUG:
-                debugEnvironment = true;
-                debuggingMode = true;
-                break;
-            case PRODUCTION:
-                debugEnvironment = false;
-                break;
-        }
-        String writeKey = getWriteKey(context);
-        diagnosticsHelper = DiagnosticsHelper.getInstance();
-        diagnosticsHelper.initDiagnostics(context, getWriteKey(context));
-        boolean writeKeyPresent = false;
-        boolean userRegistered = false;
-        if (!getWriteKey(context).isEmpty()) {
-            writeKeyPresent = true;
-        }
-
-        if (!Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN).isEmpty()) {
-            userRegistered = true;
-        }
-        ArrayList<MetaData> metaData = new ArrayList<>();
-        metaData.add(new MetaData("writeKeyPresent", "" + writeKeyPresent));
-        metaData.add(new MetaData("userRegistered", "" + userRegistered));
-
-        diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_INIT_START, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-        Maybe.fromCallable((Callable<Void>) () -> {
-            settingInitializeConfiguration(context, writeKey);
-            return null;
-        }).subscribeOn(Schedulers.computation()).subscribe();
-    }
-*/
-
 
     private void settingInitializeConfiguration(Context globalContext, String writeKey) {
         if (isOnline(globalContext)) {
@@ -386,7 +349,7 @@ public class CustomerGlu {
             ArrayList<MetaData> metaData = new ArrayList<>();
             metaData.add(new MetaData("writeKey", getWriteKey(globalContext)));
             diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_CONFIG_CALLED, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData);
-            Comman.getApiToken().getSDKConfiguration(writeKey).enqueue(new Callback<CGConfigurationModel>() {
+            CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getSDKConfiguration(writeKey), new Callback<CGConfigurationModel>() {
                 @Override
                 public void onResponse(Call<CGConfigurationModel> call, Response<CGConfigurationModel> response) {
                     printDebugLogs("Config API " + response.code());
@@ -423,6 +386,9 @@ public class CustomerGlu {
                                 if (mobile.getEnableEntryPoints() != null) {
                                     isBannerEntryPointsEnabled = mobile.getEnableEntryPoints();
                                 }
+                                if (mobile.getAllowedRetryCount() != null) {
+                                    apiRetryCount = mobile.getAllowedRetryCount();
+                                }
                                 if (mobile.getCrashLoggingEnabled() != null) {
                                     isCrashLoggingEnabled = mobile.getCrashLoggingEnabled();
                                 }
@@ -432,39 +398,50 @@ public class CustomerGlu {
                                 if (mobile.getMetricsEnabled() != null) {
                                     isMetricsEnabled = mobile.getMetricsEnabled();
                                 }
-                                if (mobile.getDeeplinkUrl() != null) {
-                                    clientDeeplinkUrl = mobile.getDeeplinkUrl();
+                                if (mobile.getLoaderColor() != null && !mobile.getLoaderColor().isEmpty()) {
+                                    configure_loader_color = mobile.getLoaderColor();
                                 }
                                 if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getLoaderURL() != null && mobile.getLoaderConfig().getLoaderURL().getLight() != null && !mobile.getLoaderConfig().getLoaderURL().getLight().isEmpty()) {
-                                    String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getLight().split("/");
-                                    String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                    String cachedLottieFileName = Prefs.getKey(globalContext, LIGHT_LOTTIE_FILE_NAME);
-                                    if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
-                                        saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getLight(), LOTTIE_FILE.LIGHT, lottieFileName);
+                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getLoaderURL().getLight()).matches()) {
+                                        String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getLight().split("/");
+                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                        String cachedLottieFileName = Prefs.getKey(globalContext, LIGHT_LOTTIE_FILE_NAME);
+                                        if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
+
+                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getLight(), LOTTIE_FILE.LIGHT, lottieFileName);
+                                        }
                                     }
                                 }
                                 if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getLoaderURL() != null && mobile.getLoaderConfig().getLoaderURL().getDark() != null && !mobile.getLoaderConfig().getLoaderURL().getDark().isEmpty()) {
-                                    String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getDark().split("/");
-                                    String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                    String cachedDarkLottieFileName = Prefs.getKey(globalContext, DARK_LOTTIE_FILE_NAME);
-                                    if (!lottieFileName.equalsIgnoreCase(cachedDarkLottieFileName)) {
-                                        saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getDark(), LOTTIE_FILE.DARK, lottieFileName);
+                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getLoaderURL().getDark()).matches()) {
+
+                                        String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getDark().split("/");
+                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                        String cachedDarkLottieFileName = Prefs.getKey(globalContext, DARK_LOTTIE_FILE_NAME);
+                                        if (!lottieFileName.equalsIgnoreCase(cachedDarkLottieFileName)) {
+                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getDark(), LOTTIE_FILE.DARK, lottieFileName);
+                                        }
                                     }
                                 }
                                 if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getEmbedLoaderURL() != null && mobile.getLoaderConfig().getEmbedLoaderURL().getLight() != null && !mobile.getLoaderConfig().getEmbedLoaderURL().getLight().isEmpty()) {
-                                    String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getLight().split("/");
-                                    String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                    String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_LIGHT_LOTTIE_FILE_NAME);
-                                    if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
-                                        saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getLight(), LOTTIE_FILE.EMBED_LIGHT, lottieFileName);
+                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getEmbedLoaderURL().getLight()).matches()) {
+                                        String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getLight().split("/");
+                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                        String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_LIGHT_LOTTIE_FILE_NAME);
+                                        if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
+                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getLight(), LOTTIE_FILE.EMBED_LIGHT, lottieFileName);
+                                        }
                                     }
                                 }
                                 if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getEmbedLoaderURL() != null && mobile.getLoaderConfig().getEmbedLoaderURL().getDark() != null && !mobile.getLoaderConfig().getEmbedLoaderURL().getDark().isEmpty()) {
-                                    String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getDark().split("/");
-                                    String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                    String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_DARK_LOTTIE_FILE_NAME);
-                                    if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
-                                        saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getDark(), LOTTIE_FILE.EMBED_DARK, lottieFileName);
+                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getEmbedLoaderURL().getDark()).matches()) {
+
+                                        String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getDark().split("/");
+                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                        String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_DARK_LOTTIE_FILE_NAME);
+                                        if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
+                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getDark(), LOTTIE_FILE.EMBED_DARK, lottieFileName);
+                                        }
                                     }
                                 }
                                 if (mobile.getAndroidStatusBarColor() != null) {
@@ -515,6 +492,9 @@ public class CustomerGlu {
                                 }
                                 if (isBannerEntryPointsEnabled) {
                                     CustomerGlu.getInstance().enableEntryPoints(globalContext, true);
+                                }
+                                if (mobile.getAllowAnonymousRegistration() != null) {
+                                    allowAnonymousRegistration = mobile.getAllowAnonymousRegistration();
                                 }
 
                                 if (isDarkModeEnabled(globalContext)) {
@@ -619,6 +599,7 @@ public class CustomerGlu {
         }
     }
 
+
     private void initializeMqtt() {
         if (!sdk_disable) {
             String userId = Prefs.getEncKey(globalContext, ENCRYPTED_CUSTOMERGLU_USER_ID);
@@ -681,6 +662,7 @@ public class CustomerGlu {
                             public void onSuccess(RewardModel rewardModel) {
                                 String entryPointId = data.getId();
                                 updateEntryPoints(entryPointId);
+
                             }
 
                             @Override
@@ -692,8 +674,6 @@ public class CustomerGlu {
                             }
                         });
 
-                    } else if (data.getType().equalsIgnoreCase(CGConstants.TEST_INTEGRATION)) {
-                        CustomerGlu.getInstance().testIntegration();
                     }
 
 
@@ -759,31 +739,35 @@ public class CustomerGlu {
         Comman.getApiToken().readJson(url).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                switch (lottieType) {
-                    case LIGHT:
-                        Prefs.putKey(context, CGConstants.LIGHT_LOTTIE_FILE, String.valueOf(response.body()));
-                        Prefs.putKey(context, LIGHT_LOTTIE_FILE_NAME, lottieFileName);
-                        break;
-                    case DARK:
-                        Prefs.putKey(context, CGConstants.DARK_LOTTIE_FILE, String.valueOf(response.body()));
-                        Prefs.putKey(context, DARK_LOTTIE_FILE_NAME, lottieFileName);
-                        break;
-                    case EMBED_LIGHT:
-                        Prefs.putKey(context, CGConstants.EMBED_LIGHT_LOTTIE_FILE, String.valueOf(response.body()));
-                        Prefs.putKey(context, EMBED_LIGHT_LOTTIE_FILE_NAME, lottieFileName);
-                        break;
-                    case EMBED_DARK:
-                        Prefs.putKey(context, CGConstants.EMBED_DARK_LOTTIE_FILE, String.valueOf(response.body()));
-                        Prefs.putKey(context, EMBED_DARK_LOTTIE_FILE_NAME, lottieFileName);
-                        break;
+                if (isJSONValid(String.valueOf(response.body()))) {
+                    switch (lottieType) {
+                        case LIGHT:
+                            Prefs.putKey(context, CGConstants.LIGHT_LOTTIE_FILE, String.valueOf(response.body()));
+                            Prefs.putKey(context, LIGHT_LOTTIE_FILE_NAME, lottieFileName);
+                            break;
+                        case DARK:
+                            Prefs.putKey(context, CGConstants.DARK_LOTTIE_FILE, String.valueOf(response.body()));
+                            Prefs.putKey(context, DARK_LOTTIE_FILE_NAME, lottieFileName);
+                            break;
+                        case EMBED_LIGHT:
+                            Prefs.putKey(context, CGConstants.EMBED_LIGHT_LOTTIE_FILE, String.valueOf(response.body()));
+                            Prefs.putKey(context, EMBED_LIGHT_LOTTIE_FILE_NAME, lottieFileName);
+                            break;
+                        case EMBED_DARK:
+                            Prefs.putKey(context, CGConstants.EMBED_DARK_LOTTIE_FILE, String.valueOf(response.body()));
+                            Prefs.putKey(context, EMBED_DARK_LOTTIE_FILE_NAME, lottieFileName);
+                            break;
 
+                    }
+                    isLottieDownload = true;
                 }
-                isLottieDownload = true;
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
-
+                if (t.getMessage() != null) {
+                    CustomerGlu.getInstance().sendCrashAnalytics(context, t.getMessage());
+                }
             }
         });
 
@@ -867,7 +851,8 @@ public class CustomerGlu {
             metaData.add(new MetaData("key", key));
             metaData.add(new MetaData("type", type));
             diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_WORMHOLE_CALLED, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData);
-            mService.getWormholeData(writeKey, key).enqueue(new Callback<DeepLinkWormholeModel>() {
+            CGAPIHelper.enqueueWithRetry(mService.getWormholeData(writeKey, key), new Callback<DeepLinkWormholeModel>() {
+
                 @Override
                 public void onResponse(Call<DeepLinkWormholeModel> call, Response<DeepLinkWormholeModel> response) {
                     try {
@@ -889,7 +874,7 @@ public class CustomerGlu {
                                     if (deepLinkData.getAnonymous() != null) {
 
                                         if (deepLinkData.getAnonymous()) {
-
+                                            allowAnonymousRegistration(true);
                                             if (Prefs.getEncKey(globalContext, ENCRYPTED_CUSTOMERGLU_TOKEN).isEmpty()) {
                                                 HashMap<String, Object> userData = new HashMap<>();
                                                 CustomerGlu.getInstance().registerDevice(globalContext, userData, new DataListner() {
@@ -909,7 +894,10 @@ public class CustomerGlu {
                                         } else if (Comman.checkAnonymousUser(globalContext.getApplicationContext())) {
                                             executeDeepLink(deepLinkData, type);
                                         } else {
-                                            cgDeepLinkListener.onFailure(CGConstants.CGSTATE.USER_NOT_SIGNED_IN);
+                                            if (cgDeepLinkListener != null) {
+
+                                                cgDeepLinkListener.onFailure(CGConstants.CGSTATE.USER_NOT_SIGNED_IN);
+                                            }
                                         }
 
                                     }
@@ -921,7 +909,10 @@ public class CustomerGlu {
                         }
                         //  range between 400 -499 - invalid url
                         if (response.code() >= 400 && response.code() <= 499) {
-                            cgDeepLinkListener.onFailure(CGConstants.CGSTATE.INVALID_URL);
+                            if (cgDeepLinkListener != null) {
+
+                                cgDeepLinkListener.onFailure(CGConstants.CGSTATE.INVALID_URL);
+                            }
                         }
                     } catch (Exception e) {
                         ArrayList<MetaData> failureMetaData = new ArrayList<>();
@@ -940,7 +931,10 @@ public class CustomerGlu {
                     }
                     failureMetaData.add(new MetaData("Exception", s));
                     diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_WORMHOLE_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
-                    cgDeepLinkListener.onFailure(CGConstants.CGSTATE.NETWORK_EXCEPTION);
+                    if (cgDeepLinkListener != null) {
+
+                        cgDeepLinkListener.onFailure(CGConstants.CGSTATE.NETWORK_EXCEPTION);
+                    }
 
                 }
             });
@@ -967,7 +961,9 @@ public class CustomerGlu {
 
 
         if (type.equalsIgnoreCase("u")) {
-            cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.DEEPLINK_URL, deepLinkData);
+            if (cgDeepLinkListener != null) {
+                cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.DEEPLINK_URL, deepLinkData);
+            }
 //            if (deepLinkData.getContent().getUrl() != null) {
 //                displayCGNudge(globalContext, deepLinkData.getContent().getUrl(), nudgeConfiguration);
 //                cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
@@ -1003,9 +999,15 @@ public class CustomerGlu {
 
                         if (campaignFound) {
                             displayCGNudge(globalContext, campaignUrl, nudgeConfiguration);
-                            cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
+                            if (cgDeepLinkListener != null) {
+
+                                cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
+                            }
                         } else {
-                            cgDeepLinkListener.onFailure(CGConstants.CGSTATE.CAMPAIGN_UNAVAILABLE);
+                            if (cgDeepLinkListener != null) {
+
+                                cgDeepLinkListener.onFailure(CGConstants.CGSTATE.CAMPAIGN_UNAVAILABLE);
+                            }
                             if (rewardModel.defaultUrl != null) {
                                 displayCGNudge(globalContext, rewardModel.defaultUrl, nudgeConfiguration);
                             }
@@ -1014,16 +1016,25 @@ public class CustomerGlu {
 
                     @Override
                     public void onFailure(String message) {
-                        cgDeepLinkListener.onFailure(CGConstants.CGSTATE.NETWORK_EXCEPTION);
+                        if (cgDeepLinkListener != null) {
+
+                            cgDeepLinkListener.onFailure(CGConstants.CGSTATE.NETWORK_EXCEPTION);
+                        }
                     }
                 });
             } else {
-                cgDeepLinkListener.onFailure(CGConstants.CGSTATE.INVALID_CAMPAIGN);
+                if (cgDeepLinkListener != null) {
+
+                    cgDeepLinkListener.onFailure(CGConstants.CGSTATE.INVALID_CAMPAIGN);
+                }
             }
         }
         if (type.equalsIgnoreCase("w")) {
             openWallet(globalContext, nudgeConfiguration);
-            cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
+            if (cgDeepLinkListener != null) {
+
+                cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
+            }
         }
     }
 
@@ -1036,16 +1047,13 @@ public class CustomerGlu {
             ApplicationInfo ai = context.getPackageManager().getApplicationInfo(
                     context.getPackageName(), PackageManager.GET_META_DATA);
             Bundle bundle = ai.metaData;
-
             apiKeyFromManifest = bundle.getString("CUSTOMERGLU_WRITE_KEY");
-
+            printDebugLogs("API KEY : " + apiKeyFromManifest);
         } catch (PackageManager.NameNotFoundException e) {
 
             Comman.printErrorLogs("WriteKey Not found");
 
         } catch (NullPointerException e) {
-            Comman.printErrorLogs(e.toString());
-            String s = e.toString();
 
             Comman.printErrorLogs("WriteKey is null ");
 
@@ -1317,7 +1325,7 @@ public class CustomerGlu {
         ArrayList<MetaData> metaData = new ArrayList<>();
         metaData.add(new MetaData("gluSDKDebuggingMode - ", "" + enable));
         diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_GLU_SDK_DEBUGGING_MODE_CALLED, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-        //pushActivities(context);
+        //  pushActivities(context);
     }
 
 //    private void pushActivities(Context context) {
@@ -1361,7 +1369,9 @@ public class CustomerGlu {
 
         }
         if (testUserIdList.contains(userId)) {
-            mService.sendActivities(write_Key, "android", screenName).enqueue(new Callback<ScreenListResponseModel>() {
+
+            CGAPIHelper.enqueueWithRetry(mService.sendActivities(write_Key, "android", screenName), new Callback<ScreenListResponseModel>() {
+
                 @Override
                 public void onResponse(Call<ScreenListResponseModel> call, Response<ScreenListResponseModel> response) {
                     if (response.code() == 200) {
@@ -1437,6 +1447,7 @@ public class CustomerGlu {
             double bg_opacity = nudgeConfiguration.getOpacity();
             double absoluteHeight = nudgeConfiguration.getAbsoluteHeight();
             double relativeHeight = nudgeConfiguration.getRelativeHeight();
+            boolean isHyperlink = nudgeConfiguration.isHyperlink();
             if (layout.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                 Intent intent = new Intent(context, BottomSheet.class);
                 intent.putExtra("nudge_url", finalUrl);
@@ -1444,6 +1455,7 @@ public class CustomerGlu {
                 intent.putExtra("opacity", String.valueOf(bg_opacity));
                 intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
                 intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
+                intent.putExtra("isHyperLink", "" + isHyperlink);
                 intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);
             } else if (layout.equalsIgnoreCase(CGConstants.BOTTOM_POPUP) || layout.equalsIgnoreCase(CGConstants.BOTTOM_DEFAULT_NOTIFICATION)) {
@@ -1453,6 +1465,8 @@ public class CustomerGlu {
                 intent.putExtra("opacity", String.valueOf(bg_opacity));
                 intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
                 intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
+                intent.putExtra("isHyperLink", "" + isHyperlink);
+
                 intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);
             } else if (layout.equalsIgnoreCase(CGConstants.MIDDLE_POPUP) || layout.equalsIgnoreCase(CGConstants.MIDDLE_NOTIFICATION)) {
@@ -1462,12 +1476,14 @@ public class CustomerGlu {
                 intent.putExtra("opacity", String.valueOf(bg_opacity));
                 intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
                 intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
+                intent.putExtra("isHyperLink", "" + isHyperlink);
                 intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);
             } else {
                 Intent intent = new Intent(context, NotificationWeb.class);
                 intent.putExtra("closeOnDeepLink", "" + closeOnDeeplink);
                 intent.putExtra("nudge_url", finalUrl);
+                intent.putExtra("isHyperLink", "" + isHyperlink);
                 intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);
             }
@@ -1829,8 +1845,8 @@ public class CustomerGlu {
             Intent intent = new Intent("CUSTOMERGLU_ANALYTICS_EVENT");
             intent.putExtra("data", nudgeAnalyticsData.toString());
             context.sendBroadcast(intent);
+            CGAPIHelper.enqueueWithRetry(mService.sendAnalyticsEvent(writeKey, "Bearer " + user_token, nudgeData), new Callback<RegisterModal>() {
 
-            mService.sendAnalyticsEvent(writeKey, "Bearer " + user_token, nudgeData).enqueue(new Callback<RegisterModal>() {
                 @Override
                 public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
                     printDebugLogs("Analytics API " + response.code());
@@ -1931,26 +1947,34 @@ public class CustomerGlu {
                     String userId = null;
                     String anonymousId = null;
                     anonymousId = Prefs.getEncKey(context, ANONYMOUSID);
+
                     if (registerObject.get("userId") != null) {
 
                         userId = "" + registerObject.get("userId");
                         userId = userId.trim();
                         if (userId.equalsIgnoreCase("")) {
                             registerObject.remove("userId");
+                            if (anonymousId.isEmpty()) {
+                                anonymousId = UUID.randomUUID().toString();
+                                Prefs.putEncKey(context, ANONYMOUSID, anonymousId);
+                            }
                         }
 
                     } else {
-                        if (anonymousId.isEmpty()) {
-                            anonymousId = UUID.randomUUID().toString();
-                            Prefs.putEncKey(context, ANONYMOUSID, anonymousId);
+                        if (allowAnonymousRegistration) {
+                            if (anonymousId.isEmpty()) {
+                                anonymousId = UUID.randomUUID().toString();
+                                Prefs.putEncKey(context, ANONYMOUSID, anonymousId);
+                            }
                         }
                     }
-
-                    if (registerObject.get("anonymousId") != null) {
-                        String aId = "" + registerObject.get("anonymousId");
-                        if (!aId.trim().isEmpty()) {
-                            anonymousId = aId;
-                            //  Prefs.putEncKey(context, ANONYMOUSID, anonymousId);
+                    if (allowAnonymousRegistration) {
+                        if (registerObject.get("anonymousId") != null) {
+                            String aId = "" + registerObject.get("anonymousId");
+                            if (!aId.trim().isEmpty()) {
+                                anonymousId = aId;
+                                Prefs.putEncKey(context, ANONYMOUSID, anonymousId);
+                            }
                         }
                     }
                     PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
@@ -1961,157 +1985,162 @@ public class CustomerGlu {
                             write_key = "" + registerObject.get("writeKey");
                         }
                     }
-                    if (write_key != null && !write_key.equalsIgnoreCase("")) {
-                        @SuppressLint("HardwareIds") String unique_id = android.provider.Settings.Secure.getString(context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
-                        mService = Comman.getApiToken();
-                        registerObject.put("deviceType", "android");
-                        registerObject.put("deviceId", unique_id);
-                        registerObject.put("deviceName", Build.MODEL);
-                        registerObject.put("appVersion", version);
-                        registerObject.put("writeKey", write_key.trim());
-                        if (!anonymousId.isEmpty()) {
-                            registerObject.put("anonymousId", anonymousId.trim());
-                        }
-                        Gson gson = new Gson();
-                        String json = gson.toJson(registerObject);
-                        printDebugLogs("Registration body " + json);
-                        registerModal = new RegisterModal();
+                    if (userId != null && !userId.isEmpty() || anonymousId != null && !anonymousId.isEmpty()) {
 
-                        mService.doRegister(debuggingMode, registerObject)
-                                .enqueue(new Callback<RegisterModal>() {
-                                    @Override
-                                    public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
-                                        printDebugLogs("Registration API " + response.code());
-                                        ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                                        String responseBody = gson.toJson(response.body());
-                                        responseMetaData.add(new MetaData("Registration API code", "" + response.code()));
-                                        responseMetaData.add(new MetaData("Registration API response body", "" + responseBody));
-                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
+                        if (write_key != null && !write_key.equalsIgnoreCase("")) {
+                            @SuppressLint("HardwareIds") String unique_id = android.provider.Settings.Secure.getString(context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+                            mService = Comman.getApiToken();
+                            registerObject.put("deviceType", "android");
+                            registerObject.put("deviceId", unique_id);
+                            registerObject.put("deviceName", Build.MODEL);
+                            registerObject.put("appVersion", version);
+                            registerObject.put("writeKey", write_key.trim());
+                            if (!anonymousId.isEmpty()) {
+                                registerObject.put("anonymousId", anonymousId.trim());
+                            }
+                            Gson gson = new Gson();
+                            String json = gson.toJson(registerObject);
+                            printDebugLogs("Registration body " + json);
+                            registerModal = new RegisterModal();
 
-                                        //      progressDialog.dismiss();
-                                        if (response.code() == 200) {
-                                            if (response.body() != null) {
-                                                if (response.body().success != null && response.body().success.equalsIgnoreCase("true")) {
-                                                    //Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show();
-                                                    ArrayList<MetaData> successMetaData = new ArrayList<>();
-                                                    diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
-                                                    registerModal.setSuccess(response.body().success);
-                                                    registerModal.setData(response.body().getData());
-                                                    cgUserData = registerModal.data.getUser();
-                                                    SentryHelper.getInstance().setupUser(registerModal.data.user.getUserId(), registerModal.data.getUser().getClient());
-                                                    Gson gson = new Gson();
-                                                    String json = gson.toJson(cgUserData);
-                                                    if (response.body().getData() != null && response.body().getData().getUser() != null) {
-                                                        if (response.body().getData().getUser().getClient() != null) {
-                                                            Prefs.putEncKey(context, CGConstants.CLIENT_ID, response.body().getData().getUser().getClient());
-                                                        }
+                            mService.doRegister(debuggingMode, registerObject)
+                                    .enqueue(new Callback<RegisterModal>() {
+                                        @Override
+                                        public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
+                                            printDebugLogs("Registration API " + response.code());
+                                            ArrayList<MetaData> responseMetaData = new ArrayList<>();
+                                            String responseBody = gson.toJson(response.body());
+                                            responseMetaData.add(new MetaData("Registration API code", "" + response.code()));
+                                            responseMetaData.add(new MetaData("Registration API response body", "" + responseBody));
+                                            diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
 
-                                                    }
-                                                    // Generate Mqtt Device Identifier
-                                                    String mqtt_identifier = Prefs.getEncKey(context, MQTT_IDENTIFIER);
-                                                    if (mqtt_identifier.isEmpty()) {
-                                                        mqtt_identifier = UUID.randomUUID().toString();
-                                                        Prefs.putEncKey(context, MQTT_IDENTIFIER, mqtt_identifier);
-                                                    }
-
-                                                    String aId = Prefs.getEncKey(context, ANONYMOUSID);
-
-
-                                                    if (response.body().getData().getUser().getAnonymousId() != null && !response.body().getData().getUser().getAnonymousId().equalsIgnoreCase(aId)) {
-                                                        Prefs.putEncKey(context, CGConstants.FLOATING_DATE, "");
-                                                        Prefs.putEncKey(context, POPUP_DATE, "");
-                                                        Prefs.putCampaignIdObject(context, null);
-                                                        Prefs.putEncCampaignIdObject(context, null);
-                                                        Prefs.putDismissedEntryPoints(context, null);
-                                                        Prefs.putEncDismissedEntryPoints(context, null);
-                                                        dismissedEntryPoints = new HashMap<>();
-                                                        displayScreen = new ArrayList<>();
-                                                        Prefs.putEncKey(context, ANONYMOUSID, response.body().getData().getUser().getAnonymousId());
-                                                    }
-                                                    if (response.body().getData().getUser().getUserId() != null) {
-                                                        user_id = response.body().getData().getUser().getUserId();
-                                                        Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID, user_id);
-                                                        String userId = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
-                                                        printDebugLogs("UserId " + userId);
-                                                        isLoginWithUserId = true;
-                                                        Prefs.putEncKey(context, IS_LOGIN, "true");
-                                                    }
-                                                    if (response.body().getData().getToken() != null) {
-                                                        token = response.body().getData().getToken();
-                                                        Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN, token);
-                                                    }
-
-                                                    if (isMqttConnected) {
-                                                        CGMqttClientHelper mqttClientHelper = getMqttInstance();
-                                                        mqttClientHelper.disconnectMqtt();
-                                                    }
-                                                    initializeMqtt();
-
-                                                    printDebugLogs("register");
-
-
-                                                    retrieveData(context, new RewardInterface() {
-                                                        @Override
-                                                        public void onSuccess(RewardModel rewardModel) {
-
-                                                            printDebugLogs(" campaigns load successfully");
-                                                            callBack.onSuccess(registerModal);
-                                                            if (isBannerEntryPointsEnabled && !isBannerEntryPointsHasData) {
-                                                                getEntryPointData(context);
+                                            //      progressDialog.dismiss();
+                                            if (response.code() == 200) {
+                                                if (response.body() != null) {
+                                                    if (response.body().success != null && response.body().success.equalsIgnoreCase("true")) {
+                                                        //Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show();
+                                                        ArrayList<MetaData> successMetaData = new ArrayList<>();
+                                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
+                                                        registerModal.setSuccess(response.body().success);
+                                                        registerModal.setData(response.body().getData());
+                                                        cgUserData = registerModal.data.getUser();
+                                                        SentryHelper.getInstance().setupUser(registerModal.data.user.getUserId(), registerModal.data.getUser().getClient());
+                                                        Gson gson = new Gson();
+                                                        String json = gson.toJson(cgUserData);
+                                                        if (response.body().getData() != null && response.body().getData().getUser() != null) {
+                                                            if (response.body().getData().getUser().getClient() != null) {
+                                                                Prefs.putEncKey(context, CGConstants.CLIENT_ID, response.body().getData().getUser().getClient());
                                                             }
 
                                                         }
-
-                                                        @Override
-                                                        public void onFailure(String message) {
-                                                            Comman.printErrorLogs(message);
-                                                            callBack.onSuccess(registerModal);
+                                                        // Generate Mqtt Device Identifier
+                                                        String mqtt_identifier = Prefs.getEncKey(context, MQTT_IDENTIFIER);
+                                                        if (mqtt_identifier.isEmpty()) {
+                                                            mqtt_identifier = UUID.randomUUID().toString();
+                                                            Prefs.putEncKey(context, MQTT_IDENTIFIER, mqtt_identifier);
                                                         }
-                                                    });
+
+                                                        String aId = Prefs.getEncKey(context, ANONYMOUSID);
+
+
+                                                        if (response.body().getData().getUser().getAnonymousId() != null && !response.body().getData().getUser().getAnonymousId().equalsIgnoreCase(aId)) {
+                                                            Prefs.putEncKey(context, CGConstants.FLOATING_DATE, "");
+                                                            Prefs.putEncKey(context, POPUP_DATE, "");
+                                                            Prefs.putCampaignIdObject(context, null);
+                                                            Prefs.putEncCampaignIdObject(context, null);
+                                                            Prefs.putDismissedEntryPoints(context, null);
+                                                            Prefs.putEncDismissedEntryPoints(context, null);
+                                                            dismissedEntryPoints = new HashMap<>();
+                                                            displayScreen = new ArrayList<>();
+                                                            Prefs.putEncKey(context, ANONYMOUSID, response.body().getData().getUser().getAnonymousId());
+                                                        }
+                                                        if (response.body().getData().getUser().getUserId() != null) {
+                                                            user_id = response.body().getData().getUser().getUserId();
+                                                            Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID, user_id);
+                                                            String userId = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
+                                                            printDebugLogs("UserId " + userId);
+                                                            isLoginWithUserId = true;
+                                                            Prefs.putEncKey(context, IS_LOGIN, "true");
+                                                        }
+                                                        if (response.body().getData().getToken() != null) {
+                                                            token = response.body().getData().getToken();
+                                                            Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN, token);
+                                                        }
+
+                                                        if (isMqttConnected) {
+                                                            CGMqttClientHelper mqttClientHelper = getMqttInstance();
+                                                            mqttClientHelper.disconnectMqtt();
+                                                        }
+                                                        initializeMqtt();
+
+                                                        printDebugLogs("register");
+
+
+                                                        retrieveData(context, new RewardInterface() {
+                                                            @Override
+                                                            public void onSuccess(RewardModel rewardModel) {
+
+                                                                printDebugLogs(" campaigns load successfully");
+                                                                callBack.onSuccess(registerModal);
+                                                                if (isBannerEntryPointsEnabled && !isBannerEntryPointsHasData) {
+                                                                    getEntryPointData(context);
+                                                                }
+
+                                                            }
+
+                                                            @Override
+                                                            public void onFailure(String message) {
+                                                                Comman.printErrorLogs(message);
+                                                                callBack.onSuccess(registerModal);
+                                                            }
+                                                        });
 //
 
 
+                                                    } else {
+                                                        String s = String.valueOf(response.code());
+
+                                                        CustomerGlu.getInstance().sendCrashAnalytics(context, "Response Body Null+" + s);
+                                                        callBack.onFail("Please Try Again");
+                                                    }
+
                                                 } else {
                                                     String s = String.valueOf(response.code());
-
                                                     CustomerGlu.getInstance().sendCrashAnalytics(context, "Response Body Null+" + s);
+                                                    printErrorLogs("Response Body Null" + response.code());
                                                     callBack.onFail("Please Try Again");
                                                 }
-
                                             } else {
-                                                String s = String.valueOf(response.code());
-                                                CustomerGlu.getInstance().sendCrashAnalytics(context, "Response Body Null+" + s);
-                                                printErrorLogs("Response Body Null" + response.code());
-                                                callBack.onFail("Please Try Again");
-                                            }
-                                        } else {
 
-                                            String s = String.valueOf(response.code());
-                                            CustomerGlu.getInstance().sendCrashAnalytics(context, "Registration Api" + s);
-                                            printErrorLogs("400" + response.code());
-                                            callBack.onFail("Please Try Again");
+                                                String s = String.valueOf(response.code());
+                                                CustomerGlu.getInstance().sendCrashAnalytics(context, "Registration Api" + s);
+                                                printErrorLogs("400" + response.code());
+                                                callBack.onFail("Please Try Again");
+
+                                            }
+                                            diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_USER_REGISTRATION_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
+
 
                                         }
-                                        diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_USER_REGISTRATION_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
 
 
-                                    }
+                                        @Override
+                                        public void onFailure(Call<RegisterModal> call, Throwable t) {
+                                            String s = "" + t;
+                                            printErrorLogs(s);
+                                            ArrayList<MetaData> failureMetaData = new ArrayList<>();
+                                            failureMetaData.add(new MetaData("failure", "" + s));
+                                            diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
+                                            CustomerGlu.getInstance().sendCrashAnalytics(context, "Registration Api Fails" + s);
+                                            callBack.onFail(s);
 
-
-                                    @Override
-                                    public void onFailure(Call<RegisterModal> call, Throwable t) {
-                                        String s = "" + t;
-                                        printErrorLogs(s);
-                                        ArrayList<MetaData> failureMetaData = new ArrayList<>();
-                                        failureMetaData.add(new MetaData("failure", "" + s));
-                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
-                                        CustomerGlu.getInstance().sendCrashAnalytics(context, "Registration Api Fails" + s);
-                                        callBack.onFail(s);
-
-                                    }
-                                });
+                                        }
+                                    });
+                        } else {
+                            printErrorLogs("Please add CustomerGlu Write Key in Manifest File");
+                        }
                     } else {
-                        printErrorLogs("Please add CustomerGlu Write Key in Manifest File");
+                        printErrorLogs("UserId is Either null or Empty");
                     }
 
 
@@ -2141,7 +2170,7 @@ public class CustomerGlu {
             diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_GET_ENTRY_POINT_START, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
             String reqToken = "Bearer " + token;
             if (entryPointId != null && !entryPointId.isEmpty()) {
-                Comman.getApiToken().getEntryPointsDataById(reqToken, entryPointId).enqueue(new Callback<EntryPointsModel>() {
+                CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getEntryPointsDataById(reqToken, entryPointId), new Callback<EntryPointsModel>() {
                     @Override
                     public void onResponse(Call<EntryPointsModel> call, Response<EntryPointsModel> response) {
                         ArrayList<MetaData> responseMetaData = new ArrayList<>();
@@ -2179,7 +2208,8 @@ public class CustomerGlu {
                     }
                 });
             } else {
-                Comman.getApiToken().getEntryPointsData(reqToken).enqueue(new Callback<EntryPointsModel>() {
+                CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getEntryPointsData(reqToken), new Callback<EntryPointsModel>() {
+
                     @Override
                     public void onResponse(Call<EntryPointsModel> call, Response<EntryPointsModel> response) {
                         ArrayList<MetaData> responseMetaData = new ArrayList<>();
@@ -2201,7 +2231,6 @@ public class CustomerGlu {
                                             getBannerHeight(globalContext, entryPointsModel);
                                             Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
                                             globalContext.sendBroadcast(mqttIntent);
-
                                         }
                                     }
                                 }
@@ -2338,7 +2367,7 @@ public class CustomerGlu {
                             }
                             cust_token = "Bearer " + Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN);
                             mService = Comman.getApiToken();
-                            mService.getEntryPointsData(cust_token).enqueue(new Callback<EntryPointsModel>() {
+                            CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getEntryPointsData(cust_token), new Callback<EntryPointsModel>() {
                                 @Override
                                 public void onResponse(Call<EntryPointsModel> call, Response<EntryPointsModel> response) {
                                     printDebugLogs("EntryPoint API " + response.code());
@@ -2722,8 +2751,8 @@ public class CustomerGlu {
                                                     nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
                                                     CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
                                                     //          CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
-
-                                                    CustomerGlu.getInstance().loadPopUpBanner(context, campaign_id, popup_open_layout, popupOpacity, absoluteHeight, relativeHeight, isClose);
+                                                    loadWeblink(context, entryPointsDataList, i, popupOpacity);
+                                                    //    CustomerGlu.getInstance().loadPopUpBanner(context, campaign_id, popup_open_layout, popupOpacity, absoluteHeight, relativeHeight, isClose);
                                                     myThread = 0;
 
                                                 }
@@ -2786,7 +2815,7 @@ public class CustomerGlu {
                                                 CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
                                                 //         CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
 
-                                                CustomerGlu.getInstance().loadPopUpBanner(context, campaign_id, popup_open_layout, popupOpacity, absoluteHeight, relativeHeight, isClose);
+                                                loadWeblink(context, entryPointsDataList, i, popupOpacity);
                                                 myThread = 0;
                                             }
                                         } else {
@@ -2851,7 +2880,7 @@ public class CustomerGlu {
                                                 CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
                                                 //  CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
 
-                                                CustomerGlu.getInstance().loadPopUpBanner(context, campaign_id, popup_open_layout, popupOpacity, absoluteHeight, relativeHeight, isClose);
+                                                loadWeblink(context, entryPointsDataList, i, popupOpacity);
                                                 myThread = 0;
 
                                             }
@@ -2922,7 +2951,7 @@ public class CustomerGlu {
                                             //      CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
                                             //    Log.e("Showing", "Loading");
 
-                                            CustomerGlu.getInstance().loadPopUpBanner(context, campaign_id, popup_open_layout, popupOpacity, absoluteHeight, relativeHeight, isClose);
+                                            loadWeblink(context, entryPointsDataList, i, popupOpacity);
                                             myThread = 0;
 
                                         }
@@ -2947,6 +2976,51 @@ public class CustomerGlu {
             myThread = thread.getId();
         } else {
             //  Toast.makeText(context, "Null", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private void loadWeblink(Context context, ArrayList<EntryPointsData> entryPointsDataList, int i, String opacity) {
+        if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction() != null) {
+            switch (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getType()) {
+                case OPEN_DEEPLINK:
+                    if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
+                        try {
+                            JSONObject dataObject = new JSONObject();
+                            dataObject.put("deepLink", entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl());
+
+                            Intent intent = new Intent("CUSTOMERGLU_DEEPLINK_EVENT");
+                            intent.putExtra("data", dataObject.toString());
+                            context.sendBroadcast(intent);
+                            if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().isHandledBySDK() != null && entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().isHandledBySDK()) {
+                                Uri uri = Uri.parse(entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl());
+                                Intent actionIntent = new Intent(Intent.ACTION_VIEW);
+                                actionIntent.setData(uri);
+                                context.startActivity(intent);
+                            }
+                        } catch (Exception e) {
+                            Log.e("CUSTOMERGLU", "" + e);
+                        }
+                    }
+                    break;
+                case OPEN_WEBLINK:
+                    NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+                    nudgeConfiguration.setRelativeHeight(entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight());
+                    nudgeConfiguration.setAbsoluteHeight(entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight());
+                    nudgeConfiguration.setLayout(entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
+                    nudgeConfiguration.setCloseOnDeepLink(entryPointsDataList.get(i).getMobileData().getContent().get(0).getCloseOnDeepLink());
+                    nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
+                    nudgeConfiguration.setHyperlink(true);
+                    if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
+                        CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
+                    }
+                    break;
+
+                default:
+                    CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getCloseOnDeepLink());
+            }
+        } else {
+            CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getCloseOnDeepLink());
         }
     }
 
@@ -3080,32 +3154,32 @@ public class CustomerGlu {
                         registerModal = new RegisterModal();
                         printDebugLogs(registerObject.toString());
                         if (!write_key.equalsIgnoreCase("")) {
-                            mService.sendCrashAnalytics(write_key, registerObject)
-                                    .enqueue(new Callback<RegisterModal>() {
-                                        @Override
-                                        public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
-                                            try {
-                                                if (response.code() == 200) {
-                                                    printDebugLogs("Crash Log sended");
-                                                }
-                                                if (response.code() == 400) {
-                                                } else {
+                            CGAPIHelper.enqueueWithRetry(mService.sendCrashAnalytics(write_key, registerObject), new Callback<RegisterModal>() {
 
-                                                }
+                                @Override
+                                public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
+                                    try {
+                                        if (response.code() == 200) {
+                                            printDebugLogs("Crash Log sended");
+                                        }
+                                        if (response.code() == 400) {
+                                        } else {
 
-                                            } catch (Exception ex) {
-                                                printDebugLogs(ex.toString());
-                                            }
                                         }
 
+                                    } catch (Exception ex) {
+                                        printDebugLogs(ex.toString());
+                                    }
+                                }
 
-                                        @Override
-                                        public void onFailure(Call<RegisterModal> call, Throwable t) {
 
-                                            //       Toast.makeText(context, t.getMessage(), Toast.LENGTH_SHORT).show();
+                                @Override
+                                public void onFailure(Call<RegisterModal> call, Throwable t) {
 
-                                        }
-                                    });
+                                    //       Toast.makeText(context, t.getMessage(), Toast.LENGTH_SHORT).show();
+
+                                }
+                            });
 
                         }
                     } catch (Exception e) {
@@ -3432,46 +3506,44 @@ public class CustomerGlu {
                     userdata.put("appVersion", version);
                     userdata.put("writeKey", write_key);
                     registerModal = new RegisterModal();
+                    CGAPIHelper.enqueueWithRetry(mService.doRegister(debuggingMode, userdata), new Callback<RegisterModal>() {
+                        @Override
+                        public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
+                            printDebugLogs("Update Profile API " + response.code());
 
-                    mService.doRegister(debuggingMode, userdata)
-                            .enqueue(new Callback<RegisterModal>() {
-                                @Override
-                                public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
-                                    printDebugLogs("Update Profile API " + response.code());
+                            if (response.code() == 200) {
+                                if (response.body() == null) {
+                                    String s = "";
+                                    CustomerGlu.getInstance().sendCrashAnalytics(context, "Update Profile Fails: response null" + s);
+                                    dataListner.onFail("fail");
+                                } else if (response.body().getSuccess().equalsIgnoreCase("true")) {
+                                    String token = response.body().getData().getToken();
+                                    cgUserData = response.body().data.getUser();
+                                    SentryHelper.getInstance().setupUser(response.body().getData().getUser().getUserId(), response.body().getData().getUser().getClient());
+                                    Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN, token);
+                                    dataListner.onSuccess(registerModal);
 
-                                    if (response.code() == 200) {
-                                        if (response.body() == null) {
-                                            String s = "";
-                                            CustomerGlu.getInstance().sendCrashAnalytics(context, "Update Profile Fails: response null" + s);
-                                            dataListner.onFail("fail");
-                                        } else if (response.body().getSuccess().equalsIgnoreCase("true")) {
-                                            String token = response.body().getData().getToken();
-                                            cgUserData = response.body().data.getUser();
-                                            SentryHelper.getInstance().setupUser(response.body().getData().getUser().getUserId(), response.body().getData().getUser().getClient());
-                                            Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN, token);
-                                            dataListner.onSuccess(registerModal);
-
-                                        } else {
-                                            dataListner.onFail("fail");
-
-                                        }
-
-                                    }
-
-
-                                }
-
-
-                                @Override
-                                public void onFailure(Call<RegisterModal> call, Throwable t) {
-                                    String s = "" + t;
+                                } else {
                                     dataListner.onFail("fail");
 
-                                    CustomerGlu.getInstance().sendCrashAnalytics(context, "Update Profile Fails" + s);
-                                    // Toast.makeText(context, "" + t, Toast.LENGTH_SHORT).show();
-
                                 }
-                            });
+
+                            }
+
+
+                        }
+
+
+                        @Override
+                        public void onFailure(Call<RegisterModal> call, Throwable t) {
+                            String s = "" + t;
+                            dataListner.onFail("fail");
+
+                            CustomerGlu.getInstance().sendCrashAnalytics(context, "Update Profile Fails" + s);
+                            // Toast.makeText(context, "" + t, Toast.LENGTH_SHORT).show();
+
+                        }
+                    });
 
 
                 } catch (Exception e) {
@@ -3521,94 +3593,93 @@ public class CustomerGlu {
 
                     mService = Comman.getApiToken();
 
+                    CGAPIHelper.enqueueWithRetry(mService.customerRetrieveData(cust_token), new Callback<RewardModel>() {
+                        @Override
+                        public void onResponse
+                                (Call<RewardModel> call, Response<RewardModel> response) {
+                            try {
 
-                    mService.customerRetrieveData(cust_token)
-                            .enqueue(new Callback<RewardModel>() {
-                                @Override
-                                public void onResponse(Call<RewardModel> call, Response<RewardModel> response) {
-                                    try {
+                                System.out.println("API Load Campaigns code " + response.code());
+                                Gson gson = new Gson();
+                                ArrayList<MetaData> responseMetaData = new ArrayList<>();
+                                String responseBody = gson.toJson(response.body());
+                                responseMetaData.add(new MetaData("Load Campaigns API response code", "" + response.code()));
+                                responseMetaData.add(new MetaData("Load Campaigns API response body - ", responseBody));
+                                diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
+                                //   System.out.println(response.body());
+                                if (response.code() == 401) {
+                                    //           queue.start();
+                                    printDebugLogs("--------401---------");
+                                    Map<String, Object> registerData = new HashMap<>();
 
-                                        System.out.println("API Load Campaigns code " + response.code());
-                                        Gson gson = new Gson();
-                                        ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                                        String responseBody = gson.toJson(response.body());
-                                        responseMetaData.add(new MetaData("Load Campaigns API response code", "" + response.code()));
-                                        responseMetaData.add(new MetaData("Load Campaigns API response body - ", responseBody));
-                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                                        //   System.out.println(response.body());
-                                        if (response.code() == 401) {
-                                            //           queue.start();
-                                            printDebugLogs("--------401---------");
-                                            Map<String, Object> registerData = new HashMap<>();
-
-                                            updateProfile(context, registerData, new DataListner() {
-                                                @Override
-                                                public void onSuccess(RegisterModal registerModal) {
-                                                    retrieveData(context, callback);
-                                                }
-
-                                                @Override
-                                                public void onFail(String message) {
-
-                                                }
-                                            });
-
-
-                                        } else if (response.code() == 200) {
-
-                                            if (response.body() == null) {
-                                                //         queue.start();
-                                                printErrorLogs("Failed to load campaigns response null");
-                                                callback.onFailure("Failed to load campaigns response null");
-                                            } else if (response.body().success == null) {
-
-                                                callback.onFailure("Failed to load campaigns success null");
-
-                                            } else if (response.body().success.equalsIgnoreCase("true")) {
-                                                //      queue.start();
-                                                ArrayList<MetaData> successMetaData = new ArrayList<>();
-                                                diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
-                                                //  Toast.makeText(context, "success", Toast.LENGTH_SHORT).show();
-                                                hostUrl = response.body().defaultUrl;
-                                                callback.onSuccess(response.body());
-
-
-                                            } else {
-                                                //     queue.start();
-                                                printErrorLogs(response.body().message);
-                                                callback.onFailure(response.body().message);
-                                            }
+                                    updateProfile(context, registerData, new DataListner() {
+                                        @Override
+                                        public void onSuccess(RegisterModal registerModal) {
+                                            retrieveData(context, callback);
                                         }
-                                    } catch (Exception e) {
-                                        String s = e.toString();
-                                        ArrayList<MetaData> metaData1 = new ArrayList<>();
-                                        metaData1.add(new MetaData("Exception", "" + e));
-                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData1);
 
-                                        CustomerGlu.getInstance().sendCrashAnalytics(context, "Load Campaign Api Fails" + s);
-                                        printErrorLogs(s);
-                                        Gson gson = new Gson();
-                                        String json = gson.toJson(response.body());
-                                        System.out.println("CustomerGlu Catch " + json);
+                                        @Override
+                                        public void onFail(String message) {
+
+                                        }
+                                    });
+
+
+                                } else if (response.code() == 200) {
+
+                                    if (response.body() == null) {
+                                        //         queue.start();
+                                        printErrorLogs("Failed to load campaigns response null");
+                                        callback.onFailure("Failed to load campaigns response null");
+                                    } else if (response.body().success == null) {
+
+                                        callback.onFailure("Failed to load campaigns success null");
+
+                                    } else if (response.body().success.equalsIgnoreCase("true")) {
+                                        //      queue.start();
+                                        ArrayList<MetaData> successMetaData = new ArrayList<>();
+                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
+                                        //  Toast.makeText(context, "success", Toast.LENGTH_SHORT).show();
+                                        hostUrl = response.body().defaultUrl;
+                                        callback.onSuccess(response.body());
+
+
+                                    } else {
+                                        //     queue.start();
+                                        printErrorLogs(response.body().message);
+                                        callback.onFailure(response.body().message);
                                     }
-
-                                    diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-
                                 }
+                            } catch (Exception e) {
+                                String s = e.toString();
+                                ArrayList<MetaData> metaData1 = new ArrayList<>();
+                                metaData1.add(new MetaData("Exception", "" + e));
+                                diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData1);
 
-                                @Override
-                                public void onFailure(Call<RewardModel> call, Throwable t) {
-                                    String s = "" + t;
-                                    ArrayList<MetaData> metaData1 = new ArrayList<>();
-                                    metaData1.add(new MetaData("Failure ", "" + s));
-                                    diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData1);
-                                    System.out.println("CustomerGlu LoadCampaign api call fails " + s);
-                                    diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-                                    CustomerGlu.getInstance().sendCrashAnalytics(context, "Load Campaign Api Fails" + s);
-                                    printErrorLogs(s);
+                                CustomerGlu.getInstance().sendCrashAnalytics(context, "Load Campaign Api Fails" + s);
+                                printErrorLogs(s);
+                                Gson gson = new Gson();
+                                String json = gson.toJson(response.body());
+                                System.out.println("CustomerGlu Catch " + json);
+                            }
 
-                                }
-                            });
+                            diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
+
+                        }
+
+                        @Override
+                        public void onFailure(Call<RewardModel> call, Throwable t) {
+                            String s = "" + t;
+                            ArrayList<MetaData> metaData1 = new ArrayList<>();
+                            metaData1.add(new MetaData("Failure ", "" + s));
+                            diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData1);
+                            System.out.println("CustomerGlu LoadCampaign api call fails " + s);
+                            diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
+                            CustomerGlu.getInstance().sendCrashAnalytics(context, "Load Campaign Api Fails" + s);
+                            printErrorLogs(s);
+
+                        }
+                    });
 
 
                 } catch (Exception e) {
@@ -3630,7 +3701,8 @@ public class CustomerGlu {
      */
 
     @Deprecated
-    public void retrieveDataByFilter(Context context, Map<String, Object> params, RewardInterface callback) {
+    public void retrieveDataByFilter(Context
+                                             context, Map<String, Object> params, RewardInterface callback) {
         if (!sdk_disable) {
 
             try {
@@ -3753,6 +3825,11 @@ public class CustomerGlu {
             }
         }
 
+    }
+
+
+    public void allowAnonymousRegistration(boolean value) {
+        allowAnonymousRegistration = value;
     }
 
     public void openWallet(Context context, boolean closeOnDeepLink) {
@@ -4113,12 +4190,6 @@ public class CustomerGlu {
         }
     }
 
-    public void testIntegration() {
-        Intent intent = new Intent(globalContext, ClientTestingPage.class);
-        intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-        globalContext.startActivity(intent);
-    }
-
     @SuppressLint("UnspecifiedImmutableFlag")
     public static void displayNotification(Context context, String title, String
             message, String url, int icon, String type, String absoluteHeight, String relativeHeight,
@@ -4215,7 +4286,8 @@ public class CustomerGlu {
      * Used to display/handle CustomerGlu Nudges without Opacity
      */
 
-    public void displayCustomerGluNotification(Context context, JSONObject json, int icon, double opacity) {
+    public void displayCustomerGluNotification(Context context, JSONObject json, int icon,
+                                               double opacity) {
         JSONObject data = null;
         if (!sdk_disable) {
 
@@ -4968,7 +5040,8 @@ public class CustomerGlu {
 
     }
 
-    public void displayCustomerGluBackgroundNotification(Context context, JSONObject json, boolean closeNudgeOnDeepLink) {
+    public void displayCustomerGluBackgroundNotification(Context context, JSONObject json,
+                                                         boolean closeNudgeOnDeepLink) {
         String isClosed = "false";
         if (closeNudgeOnDeepLink) {
             isClosed = "true";
@@ -5154,7 +5227,8 @@ public class CustomerGlu {
     }
 
     private void displayExpandedNotification(Context context, String title, String
-            message, String url, String image, int icon, String type, String absoluteHeight, String relativeHeight, double opacity, String isClosed, String nudge_id, String campaign_id) {
+            message, String url, String image, int icon, String type, String absoluteHeight, String
+                                                     relativeHeight, double opacity, String isClosed, String nudge_id, String campaign_id) {
         try {
             Intent intent = null;
 
@@ -5380,71 +5454,70 @@ public class CustomerGlu {
                         registerModal = new RegisterModal();
                         mService = Comman.getApiToken();
                         registerModal = new RegisterModal();
-                        mService.sendEvents(write_key, eventData)
-                                .enqueue(new Callback<RegisterModal>() {
-                                    @Override
-                                    public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
-                                        try {
+                        CGAPIHelper.enqueueWithRetry(mService.sendEvents(write_key, eventData), new Callback<RegisterModal>() {
+                            @Override
+                            public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
+                                try {
 
-                                            printDebugLogs("Send Event API " + response.code());
-                                            ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                                            Gson gson = new Gson();
-                                            String responseBody = gson.toJson(response.body());
-                                            responseMetaData.add(new MetaData("Send Event  API response code", "" + response.code()));
-                                            responseMetaData.add(new MetaData("Send Event  API response body - ", responseBody));
-                                            diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                                            if (response.code() == 401) {
-                                                Map<String, Object> registerData = new HashMap<>();
+                                    printDebugLogs("Send Event API " + response.code());
+                                    ArrayList<MetaData> responseMetaData = new ArrayList<>();
+                                    Gson gson = new Gson();
+                                    String responseBody = gson.toJson(response.body());
+                                    responseMetaData.add(new MetaData("Send Event  API response code", "" + response.code()));
+                                    responseMetaData.add(new MetaData("Send Event  API response body - ", responseBody));
+                                    diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
+                                    if (response.code() == 401) {
+                                        Map<String, Object> registerData = new HashMap<>();
 
-                                                updateProfile(context, registerData, new DataListner() {
-                                                    @Override
-                                                    public void onSuccess(RegisterModal registerModal) {
-                                                        sendEvent(context, eventName, eventProperties);
-
-                                                    }
-
-                                                    @Override
-                                                    public void onFail(String message) {
-
-                                                    }
-                                                });
-
-                                            } else if (response.code() == 200) {
-                                                ArrayList<MetaData> successMetaData = new ArrayList<>();
-                                                diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_SERVER_EVENTS_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
-                                                diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_SEND_EVENT_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-                                                printDebugLogs("Event Sent");
-                                                //     Toast.makeText(context, "Event sent", Toast.LENGTH_SHORT).show();
+                                        updateProfile(context, registerData, new DataListner() {
+                                            @Override
+                                            public void onSuccess(RegisterModal registerModal) {
+                                                sendEvent(context, eventName, eventProperties);
 
                                             }
 
-                                        } catch (Exception e) {
-                                            String s = e.toString();
-                                            ArrayList<MetaData> failureMetaData = new ArrayList<>();
-                                            failureMetaData.add(new MetaData("Exception", "" + e));
-                                            diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
-                                            CustomerGlu.getInstance().sendCrashAnalytics(context, s);
-                                            printErrorLogs(e.toString());
+                                            @Override
+                                            public void onFail(String message) {
 
-                                        }
-                                    }
+                                            }
+                                        });
 
-
-                                    @Override
-                                    public void onFailure(Call<RegisterModal> call, Throwable t) {
-                                        String s = "" + t;
-                                        if (t.getMessage() != null) {
-                                            s = t.getMessage();
-                                        }
-                                        ArrayList<MetaData> failureMetaData = new ArrayList<>();
-                                        failureMetaData.add(new MetaData("failure", "" + s));
-                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
+                                    } else if (response.code() == 200) {
+                                        ArrayList<MetaData> successMetaData = new ArrayList<>();
+                                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_SERVER_EVENTS_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
                                         diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_SEND_EVENT_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-                                        CustomerGlu.getInstance().sendCrashAnalytics(context, "Event Api Fails " + s);
-                                        printErrorLogs(s);
+                                        printDebugLogs("Event Sent");
+                                        //     Toast.makeText(context, "Event sent", Toast.LENGTH_SHORT).show();
 
                                     }
-                                });
+
+                                } catch (Exception e) {
+                                    String s = e.toString();
+                                    ArrayList<MetaData> failureMetaData = new ArrayList<>();
+                                    failureMetaData.add(new MetaData("Exception", "" + e));
+                                    diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
+                                    CustomerGlu.getInstance().sendCrashAnalytics(context, s);
+                                    printErrorLogs(e.toString());
+
+                                }
+                            }
+
+
+                            @Override
+                            public void onFailure(Call<RegisterModal> call, Throwable t) {
+                                String s = "" + t;
+                                if (t.getMessage() != null) {
+                                    s = t.getMessage();
+                                }
+                                ArrayList<MetaData> failureMetaData = new ArrayList<>();
+                                failureMetaData.add(new MetaData("failure", "" + s));
+                                diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
+                                diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_SEND_EVENT_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
+                                CustomerGlu.getInstance().sendCrashAnalytics(context, "Event Api Fails " + s);
+                                printErrorLogs(s);
+
+                            }
+                        });
 
                     } catch (Exception e) {
                         String s = e.toString();
@@ -5497,7 +5570,6 @@ public class CustomerGlu {
         Prefs.putEncKey(context, IS_LOGIN, "");
         Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID, "");
         Prefs.putEncKey(context, ANONYMOUSID, "");
-        Prefs.setEncryptionSalt(context,"");
         myThread = 0;
         cgUserData = null;
         entryPointsModel = null;

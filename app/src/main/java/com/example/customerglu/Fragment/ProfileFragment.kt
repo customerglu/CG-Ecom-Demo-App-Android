@@ -21,6 +21,7 @@ import com.example.customerglu.*
 import com.example.customerglu.R
 import com.example.customerglu.PaymentActivity
 import com.example.customerglu.ShipingAddressActivity
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.Utils.FirebaseUtils.storageReference
 import com.example.customerglu.Utils.Prefs
 import com.example.customerglu.db.Card.CardViewModel
@@ -86,7 +87,7 @@ class ProfileFragment : Fragment() {
     }
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(activity,"Account")
+        CustomerGluManager.setClassNameForCG(requireActivity(),"Account")
 
     }
     override fun onCreateView(
@@ -113,7 +114,7 @@ class ProfileFragment : Fragment() {
         val paymentMethod_ProfilePage = view.findViewById<CardView>(R.id.paymentMethod_ProfilePage)
         val cardsNumber_profileFrag:TextView = view.findViewById(R.id.cardsNumber_profileFrag)
         val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
-        CustomerGlu.getInstance().sendEvent(context,"viewedProfile",hashMap)
+        CustomerGluManager.sendEventsToCG(requireContext(),"viewedProfile",hashMap)
         cardViewModel = ViewModelProviders.of(this).get(CardViewModel::class.java)
 
 //        cardViewModel.allCards.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
@@ -156,11 +157,11 @@ class ProfileFragment : Fragment() {
             uploadImage()
         }
         rewards.setOnClickListener {
-            CustomerGlu.getInstance().openWallet(context)
+            CustomerGluManager.openWallet(requireContext())
         }
 
         settingCd_profileFrag.setOnClickListener {
-            CustomerGlu.getInstance().clearGluData(context)
+            CustomerGluManager.logoutFromCG(requireContext())
             Prefs.putKey(context,"userId","")
             Prefs.clearSharedPreferences(context)
             cartViewModel.deleteAll()

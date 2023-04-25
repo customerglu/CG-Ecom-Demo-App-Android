@@ -7,6 +7,8 @@ import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_DISMISS;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
 import static com.customerglu.sdk.Utils.CGConstants.FLOATING_DATE;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
@@ -19,9 +21,11 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,9 +41,12 @@ import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Modal.EntryPointsData;
 import com.customerglu.sdk.Modal.EntryPointsModel;
 import com.customerglu.sdk.Modal.MobileData;
+import com.customerglu.sdk.Modal.NudgeConfiguration;
 import com.customerglu.sdk.R;
 import com.customerglu.sdk.Utils.Comman;
 import com.customerglu.sdk.Utils.Prefs;
+
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -151,7 +158,8 @@ public class EntryPointManager extends View {
     }
 
     public void getEntryPointData() {
-        
+
+
         try {
             String current_date = new SimpleDateFormat("dd", Locale.getDefault()).format(new Date());
             new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -538,7 +546,47 @@ public class EntryPointManager extends View {
                     if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight() != null) {
                         absoluteHeight = entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight();
                     }
-                    CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
+                    if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction() != null) {
+                        switch (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getType()) {
+                            case OPEN_DEEPLINK:
+                                if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
+                                    try {
+                                        JSONObject dataObject = new JSONObject();
+                                        dataObject.put("deepLink", entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl());
+
+                                        Intent intent = new Intent("CUSTOMERGLU_DEEPLINK_EVENT");
+                                        intent.putExtra("data", dataObject.toString());
+                                        context.sendBroadcast(intent);
+                                        if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().isHandledBySDK() != null && entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().isHandledBySDK()) {
+                                            Uri uri = Uri.parse(entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl());
+                                            Intent actionIntent = new Intent(Intent.ACTION_VIEW);
+                                            actionIntent.setData(uri);
+                                            context.startActivity(intent);
+                                        }
+                                    } catch (Exception e) {
+                                        Log.e("CUSTOMERGLU", "" + e);
+                                    }
+                                }
+                                break;
+                            case OPEN_WEBLINK:
+                                NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+                                nudgeConfiguration.setRelativeHeight(relativeHeight);
+                                nudgeConfiguration.setAbsoluteHeight(absoluteHeight);
+                                nudgeConfiguration.setLayout(data.getOpenLayout());
+                                nudgeConfiguration.setCloseOnDeepLink(isClose);
+                                nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
+                                nudgeConfiguration.setHyperlink(true);
+                                if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
+                                    CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
+                                }
+                                break;
+
+                            default:
+                                CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
+                        }
+                    } else {
+                        CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
+                    }
 
                 }
             });
@@ -842,7 +890,47 @@ public class EntryPointManager extends View {
                             if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight() != null) {
                                 absoluteHeight = entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight();
                             }
-                            CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
+                            if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction() != null) {
+                                switch (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getType()) {
+                                    case OPEN_DEEPLINK:
+                                        if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
+                                            try {
+                                                JSONObject dataObject = new JSONObject();
+                                                dataObject.put("deepLink", entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl());
+
+                                                Intent intent = new Intent("CUSTOMERGLU_DEEPLINK_EVENT");
+                                                intent.putExtra("data", dataObject.toString());
+                                                context.sendBroadcast(intent);
+                                                if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().isHandledBySDK() != null && entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().isHandledBySDK()) {
+                                                    Uri uri = Uri.parse(entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl());
+                                                    Intent actionIntent = new Intent(Intent.ACTION_VIEW);
+                                                    actionIntent.setData(uri);
+                                                    context.startActivity(intent);
+                                                }
+                                            } catch (Exception e) {
+                                                Log.e("CUSTOMERGLU", "" + e);
+                                            }
+                                        }
+                                        break;
+                                    case OPEN_WEBLINK:
+                                        NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+                                        nudgeConfiguration.setRelativeHeight(relativeHeight);
+                                        nudgeConfiguration.setAbsoluteHeight(absoluteHeight);
+                                        nudgeConfiguration.setLayout(data.getOpenLayout());
+                                        nudgeConfiguration.setCloseOnDeepLink(isClose);
+                                        nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
+                                        nudgeConfiguration.setHyperlink(true);
+                                        if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
+                                            CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
+                                        }
+                                        break;
+
+                                    default:
+                                        CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
+                                }
+                            } else {
+                                CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
+                            }
 
                         } else { // A drag
                             return true; // Consumed

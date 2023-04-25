@@ -213,7 +213,8 @@ class SignUpActivity : AppCompatActivity() {
 
 
 
-    private fun signIn() {
+    private fun signIn()
+    {
 
         progressDialog.setTitle("Please Wait")
         progressDialog.setMessage("Creating Account")

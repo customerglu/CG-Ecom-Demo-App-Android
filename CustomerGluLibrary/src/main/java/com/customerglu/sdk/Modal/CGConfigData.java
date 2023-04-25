@@ -49,8 +49,10 @@ public class CGConfigData {
         ArrayList<String> whiteListedDomains;
         ArrayList<String> testUserIds;
         Boolean enableMqtt;
+        Boolean allowAnonymousRegistration;
+        Integer allowedRetryCount;
 
-        public CGMobileConfig(Boolean disableSdk, Boolean enableAnalytics, Boolean enableEntryPoints, Boolean allowUserRegistration, Boolean enableSentry, Boolean enableMqtt, Boolean forceUserRegistration, Boolean enableDarkMode, Boolean listenToSystemDarkLightMode, Boolean isDiagnosticsEnabled, Boolean isMetricsEnabled, Boolean isCrashLoggingEnabled, String loaderColor, String lightBackground, String darkBackground, String secretKey, String loadScreenColor, String androidStatusBarColor, String androidStatusBarLightColor, String androidStatusBarDarkColor, String errorMessageForDomain, String callbackConfigurationUrl, String deeplinkUrl, LoaderConfig loaderConfig, SentryDsn sentryDsn, PlatformList activityIdList, PlatformList bannerIds, PlatformList embedIds, Integer errorCodeForDomain, ArrayList<String> whiteListedDomains, ArrayList<String> testUserIds) {
+        public CGMobileConfig(Boolean disableSdk, Integer allowedRetryCount, Boolean allowAnonymousRegistration, Boolean enableAnalytics, Boolean enableEntryPoints, Boolean allowUserRegistration, Boolean enableSentry, Boolean enableMqtt, Boolean forceUserRegistration, Boolean enableDarkMode, Boolean listenToSystemDarkLightMode, Boolean isDiagnosticsEnabled, Boolean isMetricsEnabled, Boolean isCrashLoggingEnabled, String loaderColor, String lightBackground, String darkBackground, String secretKey, String loadScreenColor, String androidStatusBarColor, String androidStatusBarLightColor, String androidStatusBarDarkColor, String errorMessageForDomain, String callbackConfigurationUrl, String deeplinkUrl, LoaderConfig loaderConfig, SentryDsn sentryDsn, PlatformList activityIdList, PlatformList bannerIds, PlatformList embedIds, Integer errorCodeForDomain, ArrayList<String> whiteListedDomains, ArrayList<String> testUserIds) {
             this.disableSdk = disableSdk;
             this.enableAnalytics = enableAnalytics;
             this.enableEntryPoints = enableEntryPoints;
@@ -77,13 +79,31 @@ public class CGConfigData {
             this.loaderConfig = loaderConfig;
             this.sentryDsn = sentryDsn;
             this.activityIdList = activityIdList;
+            this.allowAnonymousRegistration = allowAnonymousRegistration;
             this.bannerIds = bannerIds;
             this.embedIds = embedIds;
             this.errorCodeForDomain = errorCodeForDomain;
             this.whiteListedDomains = whiteListedDomains;
             this.testUserIds = testUserIds;
+            this.allowedRetryCount = allowedRetryCount;
         }
 
+
+        public Integer getAllowedRetryCount() {
+            return allowedRetryCount;
+        }
+
+        public void setAllowedRetryCount(Integer allowedRetryCount) {
+            this.allowedRetryCount = allowedRetryCount;
+        }
+
+        public Boolean getAllowAnonymousRegistration() {
+            return allowAnonymousRegistration;
+        }
+
+        public void setAllowAnonymousRegistration(Boolean allowAnonymousRegistration) {
+            this.allowAnonymousRegistration = allowAnonymousRegistration;
+        }
 
         public Boolean getEnableMqtt() {
             return enableMqtt;

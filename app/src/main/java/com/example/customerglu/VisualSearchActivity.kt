@@ -1,5 +1,6 @@
 package com.example.customerglu
 
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.Activity
 import android.content.ContentUris
@@ -51,6 +52,7 @@ class VisualSearchActivity : AppCompatActivity() {
     var max: Int = -1
     private var filePath: Uri? = null
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_visual_search)
@@ -74,7 +76,7 @@ class VisualSearchActivity : AppCompatActivity() {
 
          bottomSheetView = LayoutInflater.from(applicationContext).inflate(
             R.layout.visual_predict,
-            findViewById<ConstraintLayout>(R.id.visualBottomSheet)
+             findViewById<ConstraintLayout>(R.id.visualBottomSheet)
         )
 
 

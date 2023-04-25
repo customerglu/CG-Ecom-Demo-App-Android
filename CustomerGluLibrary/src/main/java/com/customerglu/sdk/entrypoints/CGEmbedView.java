@@ -12,6 +12,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
@@ -346,10 +347,12 @@ public class CGEmbedView extends BaseRelativeLayout {
     @SuppressLint("SetJavaScriptEnabled")
     private void findViews() {
         boolean closeOnDeepLink = false;
-        String color;
-        color = CustomerGlu.configure_loader_color;
-        if (color.isEmpty()) {
-            color = "#FF000000";
+        int color;
+        try {
+            color = Color.parseColor(CustomerGlu.configure_loader_color);
+            // color is a valid color
+        } catch (IllegalArgumentException ex) {
+            color = Color.parseColor("#65DCAB");
         }
 
         cg_webView = findViewById(R.id.cg_webView);

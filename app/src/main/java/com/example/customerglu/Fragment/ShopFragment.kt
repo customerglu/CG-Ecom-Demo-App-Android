@@ -17,6 +17,7 @@ import com.example.customerglu.Adapter.CategoryAdapter
 import com.example.customerglu.Adapter.CoverProductAdapter
 import com.example.customerglu.Model.Category
 import com.example.customerglu.Model.Product
+import com.example.customerglu.Utils.CustomerGluManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -86,7 +87,7 @@ class ShopFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(activity,"Category");
+        CustomerGluManager.setClassNameForCG(requireActivity(),"Category");
     }
 
 

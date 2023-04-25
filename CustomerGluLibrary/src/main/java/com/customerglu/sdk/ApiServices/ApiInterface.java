@@ -96,10 +96,6 @@ public interface ApiInterface {
     @POST("https://diagnostics.customerglu.com/sdk/v4")
     Call<RegisterModal> sendDiagnosticsEvent(@Header("X-API-KEY") String key,
                                              @Body CGLoggingEventModel diagnosticsData);
-
-    @POST("integrations/v1/nudge/sdk/test")
-    Call<RewardModel> clientNudgeTest(
-            @Header("Authorization") String token,
-            @Body Map<String, Object> nudgeUserBody);
+    
 
 }

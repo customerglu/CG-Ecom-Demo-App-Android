@@ -20,6 +20,7 @@ import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.R
 import com.example.customerglu.Adapter.ProductAdapter
 import com.example.customerglu.Model.Product
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.Utils.DefaultCard.GetDefCard
 import com.example.customerglu.Utils.Extensions.cardXXGen
 import com.example.customerglu.Utils.Extensions.toast
@@ -68,7 +69,7 @@ class ProductDetailsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(this,"ProductDetails")
+        CustomerGluManager.setClassNameForCG(this,"ProductDetails")
     }
     override  fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,7 +141,7 @@ class ProductDetailsActivity : AppCompatActivity() {
             }else {
                 runOnUiThread {
                     val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
-                    CustomerGlu.getInstance().sendEvent(applicationContext,"addToWishlist",hashMap)
+                    CustomerGluManager.sendEventsToCG(applicationContext,"addToWishlist",hashMap)
                     productAddToFav_singleProduct.setImageResource(R.drawable.ic_myfav)
                 }
                 if (!favModel.isExist(pPid)) {
@@ -263,7 +264,7 @@ class ProductDetailsActivity : AppCompatActivity() {
         pImage = coverD[productIndex].productImage
 
         val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
-        CustomerGlu.getInstance().sendEvent(applicationContext,"viewedProduct",hashMap)
+        CustomerGluManager.sendEventsToCG(applicationContext,"viewedProduct",hashMap)
 
         Thread(Runnable {
                 // Updating Text View at current
@@ -276,7 +277,7 @@ class ProductDetailsActivity : AppCompatActivity() {
                         productAddToFav_singleProduct.setImageResource(R.drawable.ic_myfav)
                     }
                     val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
-                    CustomerGlu.getInstance().sendEvent(applicationContext,"addToWishlist",hashMap)
+                    CustomerGluManager.sendEventsToCG(applicationContext,"addToWishlist",hashMap)
                     print("Cust Present")
                 }else{
                     isLiked = false;

@@ -18,6 +18,7 @@ import com.customerglu.sdk.CustomerGlu
 
 import com.example.customerglu.R
 import com.example.customerglu.Adapter.FavAdapter
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.db.FavItemViewModel
 import com.example.customerglu.db.LikeProductEntity
 import com.example.customerglu.db.ProductEntity
@@ -34,7 +35,7 @@ class FavFragment : Fragment(), FavAdapter.FavItemClickAdapter {
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showEntryPoint(activity,"Wishlist")
+        CustomerGluManager.setClassNameForCG(requireActivity(),"Wishlist")
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +61,7 @@ class FavFragment : Fragment(), FavAdapter.FavItemClickAdapter {
         animationView.playAnimation()
         animationView.loop(true)
         val hashMap:HashMap<String,Any> = HashMap<String,Any> ()
-        CustomerGlu.getInstance().sendEvent(context,"viewedWishlist",hashMap)
+        CustomerGluManager.sendEventsToCG(requireContext(),"viewedWishlist",hashMap)
         Item = arrayListOf()
 
 

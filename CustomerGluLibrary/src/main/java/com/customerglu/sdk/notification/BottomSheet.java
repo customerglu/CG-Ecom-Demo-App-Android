@@ -125,7 +125,6 @@ public class BottomSheet extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.bottomsheet);
-        startTimer();
         if (CustomerGlu.isDarkModeEnabled(getApplicationContext())) {
             darkMode = "darkMode=true";
         }
@@ -246,17 +245,16 @@ public class BottomSheet extends BaseActivity {
         });
         View view = getLayoutInflater().inflate(R.layout.fragment_bottom_sheet_dialog, null);
         progressLottieView = view.findViewById(R.id.lottie_view);
-        setupProgressView(progressLottieView);
-        startLottieProgressView();
         pg = view.findViewById(R.id.pg);
-        String color;
 
-        color = CustomerGlu.configure_loader_color;
-        if (color.isEmpty()) {
-            color = "#FF000000";
+        int color;
+        try {
+            color = Color.parseColor(CustomerGlu.configure_loader_color);
+            // color is a valid color
+        } catch (IllegalArgumentException ex) {
+            color = Color.parseColor("#65DCAB");
         }
-
-        pg.getIndeterminateDrawable().setColorFilter(Color.parseColor(color), PorterDuff.Mode.MULTIPLY);
+        pg.getIndeterminateDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
         bottom_sheet = view.findViewById(R.id.bottom_sheet);
 
         if (!CustomerGlu.configure_loading_screen_color.isEmpty()) {
@@ -301,6 +299,15 @@ public class BottomSheet extends BaseActivity {
         final_url = url;
 
         webView = dialog.findViewById(R.id.web);
+        if (getIntent().getStringExtra("isHyperLink") != null && getIntent().getStringExtra("isHyperLink").equalsIgnoreCase("true")) {
+
+            progressLottieView.setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
+        } else {
+            startTimer();
+            setupProgressView(progressLottieView);
+            startLottieProgressView();
+        }
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
@@ -321,8 +328,9 @@ public class BottomSheet extends BaseActivity {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-        webView.loadUrl(validateURL(url + darkMode));
 
+        webView.loadUrl(validateURL(url + darkMode));
+        
 
         dialog.show();
     }

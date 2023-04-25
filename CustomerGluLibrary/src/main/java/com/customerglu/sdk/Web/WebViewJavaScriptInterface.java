@@ -42,7 +42,7 @@ import java.util.List;
 public class WebViewJavaScriptInterface {
     private final Context context;
     private final Activity activity;
-    private final boolean closeOnDeeplink;
+    private boolean closeOnDeeplink = true;
     List imageUrls;
     List imageUriList;
     String text = "", image = "", channelName = "OTHERS";
@@ -96,7 +96,7 @@ public class WebViewJavaScriptInterface {
                 boolean closeOnDeeplink = false;
                 String hidePrevious = "false";
                 if (jsonObject.has("content")) {
-                    JSONObject content = data.getJSONObject("content");
+                    JSONObject content = jsonObject.getJSONObject("content");
                     if (content.has("type")) {
                         type = content.getString("type");
                     }
@@ -108,7 +108,7 @@ public class WebViewJavaScriptInterface {
                     }
                 }
                 if (jsonObject.has("container")) {
-                    JSONObject container = data.getJSONObject("container");
+                    JSONObject container = jsonObject.getJSONObject("container");
                     if (container.has("type")) {
                         layoutType = container.getString("type");
                     }
@@ -141,6 +141,10 @@ public class WebViewJavaScriptInterface {
                     CustomerGlu.getInstance().displayCGNudge(context, url, nudgeConfiguration);
                 }
 
+                if (closeOnDeeplink) {
+                    activity.finish();
+                }
+
             }
 
             if (event.equalsIgnoreCase("OPEN_DEEPLINK")) {
@@ -150,9 +154,11 @@ public class WebViewJavaScriptInterface {
                 intent.putExtra("data", me.toString());
                 activity.sendBroadcast(intent);
 
+
                 if (me.has("closeOnDeepLink")) {
                     ctaCloseOnDeepLink = me.getString("closeOnDeepLink");
                 }
+
 
                 if (me.has("isHandledByCG")) {
                     if (me.getString("isHandledByCG").equalsIgnoreCase("true")) {
@@ -160,7 +166,7 @@ public class WebViewJavaScriptInterface {
                             String deepLinkUrl = me.getString("deepLink");
                             handleDeepLinkByCG(deepLinkUrl);
                         }
-                          
+
                     }
 
                 }

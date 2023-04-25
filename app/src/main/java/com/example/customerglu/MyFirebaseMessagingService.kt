@@ -3,6 +3,7 @@ package com.example.customerglu
 import android.annotation.SuppressLint
 import android.util.Log
 import com.customerglu.sdk.CustomerGlu
+import com.example.customerglu.Utils.CustomerGluManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import org.json.JSONObject
@@ -17,11 +18,13 @@ class MyFirebaseMessagingService: FirebaseMessagingService() {
 //        val body: String = remoteMessage.data.toString()
 //        val json = JSONObject(body)
 //        Log.d("json", json.toString())
-        val str = JSONObject(remoteMessage.data as Map<*, *>?)
-        Log.d("Cg",str.toString())
+        val jsonObject = JSONObject(remoteMessage.data as Map<*, *>?)
+        Log.d("Cg",jsonObject.toString())
 //        if (str.has("type")) {
-            CustomerGlu.getInstance()
-                .displayCustomerGluNotification(applicationContext, str, R.drawable.bags);
+            CustomerGluManager.displayCGNotifications(applicationContext,jsonObject,R.drawable.bags)
+
+
+
    //     }
 
 

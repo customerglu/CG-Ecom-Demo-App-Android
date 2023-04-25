@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieDrawable;
+import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.R;
 
 import java.io.InputStream;
@@ -26,6 +27,7 @@ public class ProgressLottieView extends RelativeLayout {
 
     private LottieAnimationView animationView;
     private ProgressBar progressBar;
+    private int progressBarColor;
 
     public ProgressLottieView(Context context) {
         super(context);
@@ -52,7 +54,13 @@ public class ProgressLottieView extends RelativeLayout {
         animationView = layout.findViewById(R.id.lottie_progress_view);
         animationView.setScaleType(ImageView.ScaleType.FIT_CENTER);
         progressBar = findViewById(R.id.progress_bar);
-        progressBar.getIndeterminateDrawable().setColorFilter(Color.parseColor("#65DCAB"), PorterDuff.Mode.MULTIPLY);
+        try {
+            progressBarColor = Color.parseColor(CustomerGlu.configure_loader_color);
+            // color is a valid color
+        } catch (IllegalArgumentException ex) {
+            progressBarColor = Color.parseColor("#65DCAB");
+        }
+        progressBar.getIndeterminateDrawable().setColorFilter(progressBarColor, PorterDuff.Mode.MULTIPLY);
         animationView.addAnimatorListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animator) {

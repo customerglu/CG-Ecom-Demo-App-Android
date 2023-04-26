@@ -42,9 +42,9 @@ android {
             multiDexEnabled false
         }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            multiDexEnabled false
+            shrinkResources true
         }
     }
     compileOptions {

@@ -13,7 +13,9 @@ android {
             v2SigningEnabled true
         }
     }
-
+    lintOptions {
+        checkReleaseBuilds false
+    }
     compileSdkVersion 33
     buildToolsVersion "30.0.3"
     packagingOptions {

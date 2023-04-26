@@ -104,8 +104,8 @@ class SplashScreenActivity : AppCompatActivity() {
         {
              var isDemoApp = Prefs.getKey(applicationContext,"demoApp")
              var clientWriteKey =  Prefs.getKey(applicationContext,"writeKey")
-                  if (isDemoApp.equals("true") )
-                 {
+                   if (isDemoApp.equals("true") )
+                  {
                     CustomerGlu.setWriteKey(Constants.sandbox_key)
                  }else {
                     CustomerGlu.setWriteKey(clientWriteKey)

@@ -2,13 +2,10 @@ package com.example.customerglu
 
 import android.Manifest
 import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.MenuItem
 import android.view.WindowManager
@@ -21,8 +18,6 @@ import com.example.customerglu.Fragment.*
 import com.example.customerglu.Utils.Constants
 import com.example.customerglu.db.FavItemViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.coroutines.delay
-import org.json.JSONObject
 
 class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
 
@@ -36,6 +31,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         setContentView(R.layout.activity_home)
         onClickRequestPermission()
 
+        CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
 
 
         CustomerGlu.getInstance().gluSDKDebuggingMode(applicationContext, true)
@@ -138,6 +134,11 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 //        }
 //        }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
+
+    }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {

@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.Fragment.*
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.Prefs
 import com.example.customerglu.db.FavItemViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
@@ -30,6 +31,16 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         onClickRequestPermission()
+
+        var key = Prefs.getKey(applicationContext,"writeKey")
+
+        if (!key.isEmpty())
+        {
+            CustomerGlu.setWriteKey(key)
+        }else{
+            CustomerGlu.setWriteKey(Constants.sandbox_key)
+        }
+        CustomerGlu.getInstance().initializeSdk(applicationContext)
 
         CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
 

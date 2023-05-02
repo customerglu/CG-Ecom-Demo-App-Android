@@ -4,11 +4,11 @@ import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.MenuItem
-import android.view.WindowManager
+import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -31,8 +31,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         setContentView(R.layout.activity_home)
         onClickRequestPermission()
 
-        CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
-
+      //  CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
 
         CustomerGlu.getInstance().gluSDKDebuggingMode(applicationContext, true)
         CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
@@ -59,6 +58,12 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+      //  addDebugBanner()
+    }
+
 
 
     private val requestPermissionLauncher =

@@ -9,6 +9,9 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.os.Handler
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.demoBanner.Banner
+import com.example.customerglu.demoBanner.BannerGravity
+import com.example.customerglu.demoBanner.DebugBanner
 import org.json.JSONObject
 
 class MyApplication: Application()
@@ -16,7 +19,9 @@ class MyApplication: Application()
     lateinit var mMessageReceiver:BroadcastReceiver
     override fun onCreate() {
         super.onCreate()
-
+        DebugBanner.init(application = this,
+            banner = Banner(bannerText = "DEMO APP", bannerGravity = BannerGravity.END)
+        )
  /*       mMessageReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 // Extract data included in the Intent

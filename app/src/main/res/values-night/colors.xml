@@ -10,4 +10,7 @@
     <color name="mainText">#FFFFFFFF</color>
     <color name="textAd">#9B9B9B</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="debug_banner_text">#FFFFFF</color>
+    <color name="debug_banner_background">#FF0000</color>
+
 </resources>

@@ -1,11 +1,13 @@
 package com.example.customerglu
 
 import android.Manifest
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
@@ -36,6 +38,7 @@ class LoginOptionActivity :AppCompatActivity() {
         exp_demo_app = findViewById(R.id.exp_demo_app)
         visualSearchBtn_homePage = findViewById(R.id.visualSearchBtn_homePage)
         getDeepLink()
+        showDialog()
         test_env.setOnClickListener {
             val intent = Intent(this, LoginActivity::class.java)
             intent.putExtra("demoApp",false)
@@ -60,6 +63,22 @@ class LoginOptionActivity :AppCompatActivity() {
                 val intent = Intent(this, QRCodeScanner::class.java)
                 startActivity(intent)
             }
+        }
+
+    }
+
+    fun showDialog() {
+        var dialog = Dialog(this)
+        val dialogview = LayoutInflater.from(this)
+            .inflate(R.layout.dialog_custom_layout, null, false)
+        //initializing dialog screen
+
+        dialog.setCancelable(true)
+        dialog.setContentView(dialogview)
+        dialog.show()
+        var yesBtn = dialog.findViewById(R.id.dismiss) as Button
+        yesBtn.setOnClickListener {
+            dialog.dismiss();
         }
 
     }

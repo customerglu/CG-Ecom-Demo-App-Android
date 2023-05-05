@@ -242,7 +242,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun checkInput() {
-      //  progressBar.visibility = VISIBLE
+        progressBar.visibility = VISIBLE
 
 //        if (emailEt.text.isEmpty()){
 //            emailError.visibility = View.VISIBLE
@@ -295,28 +295,29 @@ class LoginActivity : AppCompatActivity() {
 //            CustomerGlu.getInstance().initializeSdk(applicationContext)
         CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
 
-           CustomerGluManager.registerUser(context = applicationContext,userData)
-//            CustomerGlu.getInstance()
-//                .registerDevice(applicationContext, userData, object : DataListner {
-//                    override fun onSuccess(registerModal: RegisterModal) {
-//                    //    progressBar.visibility = GONE
-//                        intent = Intent(applicationContext, HomeActivity::class.java)
-//                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-//                        // toast("Registered")
-//                        Prefs.putKey(
-//                            applicationContext,
-//                            "userId",
-//                            registerModal.data.getUser().userId
-//                        )
-//
-//                        startActivity(intent)
-//                    }
-//
-//                    override fun onFail(message: String) {
-//                        toast(message)
-//                        progressBar.visibility = GONE
-//                    }
-//                })
+     //      CustomerGluManager.registerUser(context = applicationContext,userData)
+            CustomerGlu.getInstance()
+                .registerDevice(applicationContext, userData, object : DataListner {
+                    override fun onSuccess(registerModal: RegisterModal) {
+                        progressBar.visibility = GONE
+                        intent = Intent(applicationContext, HomeActivity::class.java)
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        // toast("Registered")
+                        Prefs.putKey(
+                            applicationContext,
+                            "userId",
+                            registerModal.data.getUser().userId
+                        )
+
+                        startActivity(intent)
+                        finish()
+                    }
+
+                    override fun onFail(message: String) {
+                        toast(message)
+                        progressBar.visibility = GONE
+                    }
+                })
 
 
 

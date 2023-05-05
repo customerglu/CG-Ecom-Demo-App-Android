@@ -64,7 +64,7 @@ object CustomerGluManager {
                                 }
 
                                 else {
-                                    navigateToActivity(context,Constants.Home)
+                                    navigateToActivity(context,Constants.Categories)
 
                                 }
                             }
@@ -114,27 +114,7 @@ object CustomerGluManager {
 
     fun registerUser(context: Context,userData:HashMap<String,Any>)
     {
-        CustomerGlu.getInstance().registerDevice(context,userData,object : DataListner {
 
-            override fun onSuccess(registerModal: RegisterModal?) {
-                val intent = Intent(context, HomeActivity::class.java)
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                // toast("Registered")
-                if (registerModal != null) {
-                    Prefs.putKey(
-                        context,
-                        "userId",
-                        registerModal.data.getUser().userId
-                    )
-                }
-
-               context.startActivity(intent)            }
-
-            override fun onFail(message: String?) {
-  //          //     println("")
-            }
-        })
     }
 
 

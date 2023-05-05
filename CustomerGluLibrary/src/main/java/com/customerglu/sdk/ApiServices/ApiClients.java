@@ -1,6 +1,7 @@
 package com.customerglu.sdk.ApiServices;
 
 import static com.customerglu.sdk.Utils.URLHelper.BaseUrl;
+import static com.customerglu.sdk.Utils.URLHelper.dev_BaseUrl;
 
 import com.customerglu.sdk.CustomerGlu;
 import com.google.gson.Gson;

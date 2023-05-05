@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.Fragment.*
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.Prefs
 import com.example.customerglu.db.FavItemViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
@@ -31,10 +32,6 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         setContentView(R.layout.activity_home)
         onClickRequestPermission()
 
-      //  CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
-
-        CustomerGlu.getInstance().gluSDKDebuggingMode(applicationContext, true)
-        CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
         getWindow()?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
 
        var type =  intent.getStringExtra(Constants.NavigateTo)
@@ -57,6 +54,18 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                 }
             }
         }
+        var key = Prefs.getKey(applicationContext,"writeKey")
+
+        if (!key.isEmpty())
+        {
+            CustomerGlu.setWriteKey(key)
+        }else{
+            CustomerGlu.setWriteKey(Constants.sandbox_key)
+        }
+        CustomerGlu.getInstance().initializeSdk(applicationContext)
+        CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
+        CustomerGlu.getInstance().gluSDKDebuggingMode(applicationContext, true)
+        CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
     }
 
     override fun onResume() {
@@ -140,7 +149,17 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 //        }
 
     override fun onNewIntent(intent: Intent?) {
+        setIntent(intent)
         super.onNewIntent(intent)
+        var key = Prefs.getKey(applicationContext,"writeKey")
+
+        if (!key.isEmpty())
+        {
+            CustomerGlu.setWriteKey(key)
+        }else{
+            CustomerGlu.setWriteKey(Constants.sandbox_key)
+        }
+        CustomerGlu.getInstance().initializeSdk(applicationContext)
         CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
 
     }

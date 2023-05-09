@@ -1,6 +1,7 @@
 package com.customerglu.sdk.ApiServices;
 
 import static com.customerglu.sdk.Utils.URLHelper.BaseUrl;
+import static com.customerglu.sdk.Utils.URLHelper.dev_BaseUrl;
 
 import com.customerglu.sdk.CustomerGlu;
 import com.google.gson.Gson;
@@ -36,7 +37,7 @@ public class ApiClients {
 
         if (retrofit1 == null) {
             retrofit1 = new Retrofit.Builder()
-                    .baseUrl(BaseUrl)
+                    .baseUrl(dev_BaseUrl)
                     .client(okHttpClient1)
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create(gson))

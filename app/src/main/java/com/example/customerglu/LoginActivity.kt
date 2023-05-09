@@ -253,15 +253,16 @@ class LoginActivity : AppCompatActivity() {
         var clientWriteKey:String
             signInEmail = emailEt.text.toString().trim()
             signInPassword = passEt.text.toString().trim()
+        var userData:HashMap<String,Any> = HashMap<String,Any>()
 
-        if (signInEmail.isEmpty())
+        if (!signInEmail.isEmpty())
         {
-            toast("Please enter userId")
+            userData.put("userId", signInEmail)
+        }else{
+            CustomerGlu.getInstance().allowAnonymousRegistration(true)
         }
 
 
-            var userData:HashMap<String,Any> = HashMap<String,Any>()
-            userData.put("userId", signInEmail)
             userData.put("firebaseToken", fcmToken)
             if (isDemoApp)
             {

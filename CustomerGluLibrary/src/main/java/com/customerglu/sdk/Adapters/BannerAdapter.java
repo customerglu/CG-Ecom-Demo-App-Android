@@ -15,7 +15,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.customerglu.sdk.Modal.RewardModel;
+import com.customerglu.sdk.Modal.Campaigns;
 import com.customerglu.sdk.R;
 import com.customerglu.sdk.notification.MiddleDialog;
 import com.squareup.picasso.Picasso;
@@ -27,9 +27,9 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.UnderShop>
     View v;
     private final Context mContext;
     String url = "";
-    public List<RewardModel.Campaigns> rewardlist = new ArrayList<>();
+    public List<Campaigns> rewardlist = new ArrayList<>();
 
-    public BannerAdapter(Context mContext, List<RewardModel.Campaigns> rewardlist) {
+    public BannerAdapter(Context mContext, List<Campaigns> rewardlist) {
         this.mContext = mContext;
         this.rewardlist = rewardlist;
     }
@@ -45,7 +45,7 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.UnderShop>
     @Override
     public void onBindViewHolder(@NonNull BannerAdapter.UnderShop holder, int position) {
         try {
-            final RewardModel.Campaigns data = rewardlist.get(position);
+            final Campaigns data = rewardlist.get(position);
 
 
             if (data != null) {

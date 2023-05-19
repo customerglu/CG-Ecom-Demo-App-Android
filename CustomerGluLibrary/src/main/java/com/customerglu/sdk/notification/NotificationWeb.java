@@ -192,7 +192,7 @@ public class NotificationWeb extends BaseActivity {
 
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
-                System.out.println(val);
+                printDebugLogs(val);
                 closeOnDeepLink = true;
             } else {
                 closeOnDeepLink = false;
@@ -258,10 +258,10 @@ public class NotificationWeb extends BaseActivity {
         pg.getIndeterminateDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
 
         url = getIntent().getStringExtra("nudge_url");
-        System.out.println("RET");
+        printDebugLogs("RET");
         final_url = url;
 
-        System.out.println(url);
+        printDebugLogs(url);
         webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setInitialScale(1);

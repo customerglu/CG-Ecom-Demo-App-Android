@@ -4,6 +4,7 @@ import static com.customerglu.sdk.Utils.CGConstants.ENCRYPTED_CAMPAIGN_OBJ;
 import static com.customerglu.sdk.Utils.CGConstants.ENCRYPTED_DISMISSED_ENTRY_POINTS;
 import static com.customerglu.sdk.Utils.Comman.aesDecrypt;
 import static com.customerglu.sdk.Utils.Comman.aesEncrypt;
+import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 import android.content.Context;
@@ -45,8 +46,8 @@ public class Prefs {
         try {
             String encKey = Key;
             String encValue = aesEncrypt(context, Value);
-            System.out.println("encKey " + encKey);
-            System.out.println("encValue " + encValue);
+            printDebugLogs("encKey " + encKey);
+            printDebugLogs("encValue " + encValue);
 
 
             sharedPreferences = context.getSharedPreferences("CacheNew", Context.MODE_PRIVATE);
@@ -62,7 +63,7 @@ public class Prefs {
     public static String getEncKey(Context contextGetKey, String Key) {
         try {
             String encKey = Key;
-            System.out.println("encKey get" + encKey);
+            printDebugLogs("encKey get" + encKey);
 
             sharedPreferences = contextGetKey.getSharedPreferences("CacheNew", Context.MODE_PRIVATE);
             String Value = sharedPreferences.getString(encKey, "");
@@ -70,8 +71,8 @@ public class Prefs {
                 return "";
             }
             String finalValue = aesDecrypt(contextGetKey, Value);
-            System.out.println("getValue " + finalValue);
-            System.out.println("EncgetValue " + Value);
+            printDebugLogs("getValue " + finalValue);
+            printDebugLogs("EncgetValue " + Value);
 
             return finalValue;
         } catch (Exception e) {

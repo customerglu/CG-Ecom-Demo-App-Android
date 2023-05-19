@@ -17,7 +17,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcelable;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 
 import androidx.core.app.ShareCompat;
@@ -60,7 +59,7 @@ public class WebViewJavaScriptInterface {
     @JavascriptInterface
     public void callback(String message) {
         JSONObject data = null;
-        Log.e("cg", message);
+        printDebugLogs("JS callback " + message);
         try {
             data = new JSONObject(message);
             ArrayList<MetaData> metaData = new ArrayList<>();
@@ -79,7 +78,7 @@ public class WebViewJavaScriptInterface {
 
             }
             if (event.equalsIgnoreCase("HIDE_LOADER")) {
-                Log.e("CG", "HIDE_LOADER");
+                printDebugLogs("HIDE_LOADER");
                 Intent intent = new Intent("HIDE_LOADER");
 //                intent.putExtra("data", me.toString());
                 activity.sendBroadcast(intent);
@@ -171,7 +170,7 @@ public class WebViewJavaScriptInterface {
 
                 }
                 if (closeOnDeeplink || ctaCloseOnDeepLink.equalsIgnoreCase("true")) {
-                    Log.e("Cust", "Webview closed");
+                    printDebugLogs("Webview closed");
                     CustomerGlu.dismiss_trigger = CGConstants.CTA_REDIRECT;
                     activity.finish();
                 }

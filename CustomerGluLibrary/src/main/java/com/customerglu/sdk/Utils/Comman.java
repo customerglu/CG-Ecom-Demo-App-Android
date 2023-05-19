@@ -273,9 +273,9 @@ public class Comman {
             String[] urltype = url.split("/");
             String deepLinkType = urltype[urltype.length - 2];
             String deepLinkKey = url.substring(url.lastIndexOf("/")).replace("/", "");
-            Log.e("CGURL ", url);
-            Log.e("CG key ", deepLinkKey);
-            Log.e("CG type ", deepLinkType);
+            printDebugLogs(url);
+            printDebugLogs(deepLinkKey);
+            printDebugLogs(deepLinkType);
             CustomerGlu.getInstance().validateDeepLinkKey(deepLinkKey, deepLinkType);
         }
     }

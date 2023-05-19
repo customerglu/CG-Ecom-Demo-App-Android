@@ -165,7 +165,7 @@ public class MiddleDialog extends BaseActivity {
             }
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
-                System.out.println(val);
+                printDebugLogs(val);
                 closeOnDeepLink = true;
             } else {
                 closeOnDeepLink = false;
@@ -284,8 +284,8 @@ public class MiddleDialog extends BaseActivity {
 
         main.getBackground().setAlpha((int) backgroundOpcatity);
 
-        System.out.println("RET");
-        System.out.println(url);
+        printDebugLogs("RET");
+        printDebugLogs(url);
 
 //        double newHeight = 540;
 //        double newWidth = 353;
@@ -318,7 +318,7 @@ public class MiddleDialog extends BaseActivity {
         }
 
         webView.loadUrl(validateURL(url + darkMode));
-        
+
     }
 
 }

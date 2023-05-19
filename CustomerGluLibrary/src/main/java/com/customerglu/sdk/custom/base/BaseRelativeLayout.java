@@ -71,7 +71,7 @@ public class BaseRelativeLayout extends RelativeLayout {
 
     public void stopLottieProgressView() {
         if (progressLottieView != null) {
-
+            
             progressLottieView.setVisibility(View.GONE);
             progressLottieView.pauseAnimation();
         }

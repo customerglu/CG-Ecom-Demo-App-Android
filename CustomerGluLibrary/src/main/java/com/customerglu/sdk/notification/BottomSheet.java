@@ -156,7 +156,7 @@ public class BottomSheet extends BaseActivity {
             }
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
-                System.out.println(val);
+                printDebugLogs(val);
                 closeOnDeepLink = true;
             } else {
                 closeOnDeepLink = false;
@@ -330,7 +330,7 @@ public class BottomSheet extends BaseActivity {
         }
 
         webView.loadUrl(validateURL(url + darkMode));
-        
+
 
         dialog.show();
     }

@@ -1,7 +1,9 @@
 package com.customerglu.sdk.entrypoints;
 
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
+import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
 import static com.customerglu.sdk.Utils.Comman.isValidURL;
+import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.validateURL;
 
 import android.annotation.SuppressLint;
@@ -17,12 +19,12 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.Nullable;
@@ -43,6 +45,8 @@ import com.customerglu.sdk.custom.views.ProgressLottieView;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,19 +64,21 @@ public class CGEmbedView extends BaseRelativeLayout {
     int screenHeight, screenWidth;
     BroadcastReceiver broadcastReceiver;
     boolean isLoaded = false;
+    boolean isPresent = false;
     Boolean isThere = false;
-    Boolean isClosed = false;
+    Boolean isClosed = true;
     double absoluteHeight = 0;
     double relativeHeight = 0;
     CountDownTimer cTimer = null;
     ProgressLottieView progressLottieView;
     String darkMode = "darkMode=false";
+    String isEmbedded = "&isEmbedded=true";
 
     public CGEmbedView(Context context, String id) {
         super(context);
         this.context = context;
         elementId = id;
-        System.out.println(elementId);
+        printDebugLogs(elementId);
         LayoutInflater.from(context).inflate(R.layout.embedded_view, this, true);
         startTimer();
         init();
@@ -86,13 +92,14 @@ public class CGEmbedView extends BaseRelativeLayout {
 
         //    main.setVisibility(GONE);
         elementId = getResources().getResourceEntryName(this.getId());
-        System.out.println(elementId);
+        printDebugLogs(elementId);
         LayoutInflater.from(context).inflate(R.layout.embedded_view, this, true);
 
 //        findViews();
         startTimer();
         init();
     }
+
 
     void startTimer() {
         cTimer = new CountDownTimer(8000, 1000) {
@@ -103,7 +110,6 @@ public class CGEmbedView extends BaseRelativeLayout {
                 if (cg_webView != null) {
 
                     cg_webView.setVisibility(View.VISIBLE);
-
                     stopLottieProgressView();
                     cancelTimer();
                 }
@@ -141,11 +147,7 @@ public class CGEmbedView extends BaseRelativeLayout {
             CustomerGlu.getInstance().sendActivities(context, screenListModal);
         }
 
-        if (!CustomerGlu.lastScreenName.equalsIgnoreCase("")) {
-            screenName = CustomerGlu.lastScreenName;
-        } else {
-            screenName = context.getClass().getCanonicalName();
-        }
+
         if (CustomerGlu.isDarkModeEnabled(CustomerGlu.globalContext)) {
             darkMode = "darkMode=true";
         }
@@ -153,13 +155,14 @@ public class CGEmbedView extends BaseRelativeLayout {
 
         screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
 
-        Log.e("screenHeight", "" + screenHeight);
-        Log.e("screenWidth", "" + screenWidth);
+        printDebugLogs("screenHeight" + screenHeight);
+        printDebugLogs("screenWidth" + screenWidth);
         if (CustomerGlu.isBannerEntryPointsEnabled && CustomerGlu.isBannerEntryPointsHasData) {
             getEntryPointData();
         }
 
     }
+
 
     @Override
     protected void onAttachedToWindow() {
@@ -167,7 +170,7 @@ public class CGEmbedView extends BaseRelativeLayout {
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                System.out.println("==================Recieved============");
+                printDebugLogs("==================Recieved============");
                 if (intent.getAction().equalsIgnoreCase("CUSTOMERGLU_ENTRY_POINT_DATA")) {
                     if (!isLoaded) {
                         startTimer();
@@ -243,19 +246,17 @@ public class CGEmbedView extends BaseRelativeLayout {
 
 
                                                                     if (relativeHeight > 0) {
-
                                                                         height = (int) screenHeight * (relativeHeight / 100);
                                                                     } else if (absoluteHeight > 0) {
                                                                         height = (int) (absoluteHeight * Resources.getSystem().getDisplayMetrics().density);
                                                                     } else {
-                                                                        height = 0;
+                                                                        height = (int) screenHeight * 0.20;
                                                                     }
                                                                     sendAnalytics(entryPointsModel.getEntryPointsData().get(i));
+                                                                    isPresent = true;
                                                                     findViews();
 
                                                                 }
-
-
                                                             }
                                                         }
                                                     }
@@ -270,7 +271,12 @@ public class CGEmbedView extends BaseRelativeLayout {
                                 }
 
                             }
+                            if (!isPresent) {
+                                changeHeight(0);
+                                //     findViews();
+                            }
                             isLoaded = false;
+                            isPresent = false;
                         }
                     }
 
@@ -361,6 +367,7 @@ public class CGEmbedView extends BaseRelativeLayout {
         params.height = (int) height;
         params.width = ViewGroup.LayoutParams.MATCH_PARENT;
         progressLottieView.setLayoutParams(params);
+        progressLottieView.setScaleType(ImageView.ScaleType.FIT_XY);
         setupProgressView(progressLottieView);
         startLottieProgressView();
         ViewGroup.LayoutParams webParams = cg_webView.getLayoutParams();
@@ -388,14 +395,25 @@ public class CGEmbedView extends BaseRelativeLayout {
                 @Override
                 public void onSuccess(RewardModel rewardModel) {
                     String default_url = rewardModel.defaultUrl;
-                    cg_webView.loadUrl(validateURL(default_url + darkMode));
+                    try {
+                        URL checkurl = new URL(default_url);
+                        if (checkurl.getQuery() == null) {
+                            darkMode = "?" + darkMode;
+                        } else {
+                            darkMode = "&" + darkMode;
+
+                        }
+                        // Toast.makeText(OpenCustomerGluWeb.this, "cg" + url.getQuery(), Toast.LENGTH_SHORT).show();
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+                    cg_webView.loadUrl(validateURL(default_url + darkMode + isEmbedded));
 
                 }
 
                 @Override
                 public void onFailure(String message) {
-                    String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
-                    cg_webView.loadUrl(url);
+                    cg_webView.loadUrl(ERROR_URL);
 
                 }
             });
@@ -412,13 +430,24 @@ public class CGEmbedView extends BaseRelativeLayout {
                     if (rewardModel.getCampaigns().size() <= 0) {
 
                         String default_url = rewardModel.defaultUrl;
-                        cg_webView.loadUrl(validateURL(default_url + darkMode));
+                        try {
+                            URL checkurl = new URL(default_url);
+                            if (checkurl.getQuery() == null) {
+                                darkMode = "?" + darkMode;
+                            } else {
+                                darkMode = "&" + darkMode;
+
+                            }
+                            // Toast.makeText(OpenCustomerGluWeb.this, "cg" + url.getQuery(), Toast.LENGTH_SHORT).show();
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
+                        }
+                        cg_webView.loadUrl(validateURL(default_url + darkMode + isEmbedded));
                         // Toast.makeText(getApplicationContext(), "Invalid CampaignId", Toast.LENGTH_SHORT).show();
                     } else {
                         String json1 = gson.toJson(rewardModel);
 
                         for (int i = 0; i < rewardModel.getCampaigns().size(); i++) {
-                            System.out.println(i);
                             String tag = "";
 
                             if (rewardModel.getCampaigns().get(i).getBanner() != null && rewardModel.getCampaigns().get(i).getBanner().getTag() != null) {
@@ -435,8 +464,21 @@ public class CGEmbedView extends BaseRelativeLayout {
                                 //   System.out.println(url);
                                 //     Toast.makeText(OpenCustomerGluWeb.this, url, Toast.LENGTH_SHORT).show();
                                 isThere = true;
+                                try {
+                                    URL checkurl = new URL(url);
+                                    if (checkurl.getQuery() == null) {
+                                        darkMode = "?" + darkMode;
+                                    } else {
+                                        darkMode = "&" + darkMode;
 
-                                cg_webView.loadUrl(validateURL(url + darkMode));
+                                    }
+                                    // Toast.makeText(OpenCustomerGluWeb.this, "cg" + url.getQuery(), Toast.LENGTH_SHORT).show();
+                                } catch (MalformedURLException e) {
+                                    e.printStackTrace();
+                                }
+                                printDebugLogs("embed url " + url + darkMode + isEmbedded);
+                                cg_webView.loadUrl(validateURL(url + darkMode + isEmbedded));
+
                                 Map<String, Object> map = new HashMap();
 
                                 map.put(elementId, height);
@@ -449,16 +491,27 @@ public class CGEmbedView extends BaseRelativeLayout {
 
                         }
                         if (!isThere) {
+                            try {
+                                URL checkurl = new URL(rewardModel.defaultUrl);
+                                if (checkurl.getQuery() == null) {
+                                    darkMode = "?" + darkMode;
+                                } else {
+                                    darkMode = "&" + darkMode;
+
+                                }
+                                // Toast.makeText(OpenCustomerGluWeb.this, "cg" + url.getQuery(), Toast.LENGTH_SHORT).show();
+                            } catch (MalformedURLException e) {
+                                e.printStackTrace();
+                            }
                             String default_url = rewardModel.defaultUrl;
-                            cg_webView.loadUrl(validateURL(default_url + darkMode));
+                            cg_webView.loadUrl(validateURL(default_url + darkMode + isEmbedded));
                         }
                     }
                 }
 
                 @Override
                 public void onFailure(String message) {
-                    String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
-                    cg_webView.loadUrl(url);
+                    cg_webView.loadUrl(ERROR_URL);
                 }
             });
         }

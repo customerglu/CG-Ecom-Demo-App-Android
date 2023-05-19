@@ -15,7 +15,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.customerglu.sdk.CustomerGlu;
-import com.customerglu.sdk.Modal.RewardModel;
+import com.customerglu.sdk.Modal.Campaigns;
 import com.customerglu.sdk.R;
 import com.customerglu.sdk.Utils.Prefs;
 import com.customerglu.sdk.Web.RewardWeb;
@@ -28,9 +28,9 @@ public class RewardsAdapter extends RecyclerView.Adapter<RewardsAdapter.UnderSho
     View v;
     private final Context mContext;
     String url = "";
-    public List<RewardModel.Campaigns> rewardlist = new ArrayList<>();
+    public List<Campaigns> rewardlist = new ArrayList<>();
 
-    public RewardsAdapter(Context mContext, List<RewardModel.Campaigns> rewardlist) {
+    public RewardsAdapter(Context mContext, List<Campaigns> rewardlist) {
         this.mContext = mContext;
         this.rewardlist = rewardlist;
     }
@@ -49,7 +49,7 @@ public class RewardsAdapter extends RecyclerView.Adapter<RewardsAdapter.UnderSho
     @Override
     public void onBindViewHolder(@NonNull RewardsAdapter.UnderShop holder, int position) {
         try {
-            RewardModel.Campaigns data = null;
+            Campaigns data = null;
             if (rewardlist != null) {
                 data = rewardlist.get(position);
 
@@ -74,7 +74,7 @@ public class RewardsAdapter extends RecyclerView.Adapter<RewardsAdapter.UnderSho
             }
 
 
-            RewardModel.Campaigns finalData = data;
+            Campaigns finalData = data;
             holder.mImage.setOnClickListener(new View.OnClickListener() {
 
                 @Override

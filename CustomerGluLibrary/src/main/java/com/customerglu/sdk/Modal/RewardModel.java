@@ -58,70 +58,12 @@ public class RewardModel {
     public List<Campaigns> campaigns;
 
 
-    public class DefaultBanner
-    {
+    public class DefaultBanner {
 
     }
 
-    public class Campaigns
-    {
-        public Campaigns(String campaignId, String url, String type, String status, Banner banner) {
-            this.campaignId = campaignId;
-            this.url = url;
-            this.type = type;
-            this.status = status;
-            this.banner = banner;
-        }
 
-        public String getCampaignId() {
-            return campaignId;
-        }
-
-        public void setCampaignId(String campaignId) {
-            this.campaignId = campaignId;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-        public Banner getBanner() {
-            return banner;
-        }
-
-        public void setBanner(Banner banner) {
-            this.banner = banner;
-        }
-
-        String campaignId;
-        String url;
-        String type;
-        String status;
-        Banner banner;
-    }
-
-    public class Banner
-    {
+    public class Banner {
         public String getTitle() {
             return title;
         }
@@ -195,7 +137,6 @@ public class RewardModel {
         }
 
 
-
         String title;
         String body;
         String imageUrl;
@@ -242,3 +183,4 @@ public class RewardModel {
     }
 
 }
+

@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.customerglu.sdk.Adapters.RewardsAdapter;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Interface.RewardInterface;
+import com.customerglu.sdk.Modal.Campaigns;
 import com.customerglu.sdk.Modal.RewardModel;
 import com.customerglu.sdk.R;
 
@@ -34,7 +35,7 @@ public class FilterReward extends Activity {
     HashMap<String, Object> params;
     TextView label;
     ProgressBar pg;
-    public List<RewardModel.Campaigns> rewardlist = new ArrayList<>();
+    public List<Campaigns> rewardlist = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

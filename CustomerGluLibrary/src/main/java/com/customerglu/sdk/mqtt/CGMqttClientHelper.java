@@ -3,6 +3,7 @@ package com.customerglu.sdk.mqtt;
 import static com.customerglu.sdk.CustomerGlu.isMqttConnected;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_MQTT_CONNECTED;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_MQTT_INITIALIZING;
+import static com.customerglu.sdk.Utils.CGConstants.DEV_MQTT_SERVER_HOST;
 import static com.customerglu.sdk.Utils.CGConstants.MQTT_SERVER_HOST;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
@@ -59,7 +60,8 @@ public class CGMqttClientHelper {
     Single<Mqtt3ConnAck> connAckSingle;
     Completable connectScenario, subscribeScenario;
     CGGsonHelper gsonHelper;
-    String topic = "";
+    String userLeveTopic = "";
+    String clientLevelTopic = "";
     String userName = "";
     public MqttListener mqttListener;
 
@@ -111,9 +113,11 @@ public class CGMqttClientHelper {
             byte[] hashBytes = Comman.getSHA256(username);
             String userHash = Comman.toHexString(hashBytes);
             printDebugLogs("userHash " + userHash);
-            topic = "nudges/" + clientId + "/" + userHash;
-            printDebugLogs("topic " + topic);
-            subscribeToTopic(topic);
+            userLeveTopic = "nudges/" + clientId + "/" + userHash;
+            printDebugLogs("topic " + userLeveTopic);
+            clientLevelTopic = "/state/global/" + clientId;
+            printDebugLogs("topic " + clientLevelTopic);
+            subscribeToTopic(userLeveTopic, clientLevelTopic);
         } catch (Exception e) {
             printErrorLogs("Mqtt sha-256 hash failed with exception " + e);
         }
@@ -136,15 +140,16 @@ public class CGMqttClientHelper {
     /**
      * Subscription topic should be shared
      *
-     * @param topic
+     * @param globalTopic
+     * @param userLeveTopic
      */
-    private void subscribeToTopic(String topic) {
+    private void subscribeToTopic(String globalTopic, String userLeveTopic) {
         try {
             subAckFlowableWithSingle = client
                     .toRx()
                     .subscribePublishesWith()
-                    .topicFilter(topic)
-                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .addSubscription().topicFilter(globalTopic).qos(MqttQos.AT_LEAST_ONCE).applySubscription()
+                    .addSubscription().topicFilter(userLeveTopic).qos(MqttQos.AT_LEAST_ONCE).applySubscription()
                     .applySubscribe();
             setupCompletables();
         } catch (Exception e) {
@@ -183,6 +188,7 @@ public class CGMqttClientHelper {
      * @param publishData - publish data of type Mqtt3Publish
      */
     private void onDataReceivedFromMQTT(Mqtt3Publish publishData) {
+
         String data = new String(publishData.getPayloadAsBytes());
         byte[] encodeData = Base64.decode(data, Base64.DEFAULT);
         String mqttData = new String(encodeData, StandardCharsets.UTF_8);
@@ -217,7 +223,8 @@ public class CGMqttClientHelper {
         isMqttConnected = true;
         printDebugLogs("MQTT Successfully implemented");
         ArrayList<MetaData> responseMetaData = new ArrayList();
-        responseMetaData.add(new MetaData("topic", topic));
+        responseMetaData.add(new MetaData("userLevelTopic", userLeveTopic));
+        responseMetaData.add(new MetaData("clientLevelTopic", clientLevelTopic));
         responseMetaData.add(new MetaData("userName", userName));
         CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_MQTT_CONNECTED, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, responseMetaData);
     }

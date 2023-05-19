@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_lyt"
+    android:layout_width="match_parent"
+    android:layout_height="50dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        android:layout_marginStart="20dp"
+        android:textColor="@color/glu_black"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/testName"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ProgressBar
+        android:layout_marginStart="5dp"
+        app:layout_constraintLeft_toRightOf="@id/testName"
+        app:layout_constraintTop_toTopOf="@id/testName"
+        app:layout_constraintBottom_toBottomOf="@id/testName"
+        android:id="@+id/pg"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_centerInParent="true" />
+
+    <ImageView
+        android:layout_marginStart="5dp"
+        app:layout_constraintLeft_toRightOf="@id/testName"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/progress_image"
+        android:visibility="gone"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_centerInParent="true" />
+
+
+    <TextView
+        android:layout_marginEnd="10dp"
+        android:layout_width="wrap_content"
+        android:padding="6dp"
+        android:layout_height="wrap_content"
+        android:background="@color/glu_black"
+        android:text="Retry"
+        android:visibility="gone"
+        android:textColor="@color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:id="@+id/retry" />
+
+    <TextView
+        android:layout_marginEnd="10dp"
+        android:layout_width="wrap_content"
+        android:padding="6dp"
+        android:layout_height="wrap_content"
+        android:background="@color/glu_black"
+        android:text="Check Docs"
+        android:visibility="gone"
+        android:textColor="@color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/retry"
+        android:id="@+id/check_docs" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

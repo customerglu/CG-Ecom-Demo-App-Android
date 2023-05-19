@@ -3,6 +3,8 @@ package com.customerglu.sdk.ApiServices;
 
 import com.customerglu.sdk.Modal.CGConfigurationModel;
 import com.customerglu.sdk.Modal.CGLoggingEventModel;
+import com.customerglu.sdk.Modal.ClientTestNotificationModel;
+import com.customerglu.sdk.Modal.ClientTestPostDataModel;
 import com.customerglu.sdk.Modal.ConfigurationData;
 import com.customerglu.sdk.Modal.DeepLinkWormholeModel;
 import com.customerglu.sdk.Modal.EntryPointsModel;
@@ -96,6 +98,22 @@ public interface ApiInterface {
     @POST("https://diagnostics.customerglu.com/sdk/v4")
     Call<RegisterModal> sendDiagnosticsEvent(@Header("X-API-KEY") String key,
                                              @Body CGLoggingEventModel diagnosticsData);
-    
+
+
+    @POST("/integrations/v1/nudge/sdk/test")
+    Call<RewardModel> clientNudgeTest(
+            @Header("Authorization") String token,
+            @Body Map<String, Object> nudgeUserBody);
+
+    @POST("/integrations/v1/onboarding/sdk/notification-config")
+    Call<ClientTestNotificationModel> checkFirebaseConfiguration(
+            @Header("x-api-key") String writeKey,
+            @Body Map<String, Object> nudgeUserBody);
+
+    @POST("/integrations/v1/onboarding/sdk/test-steps")
+    Call<ClientTestNotificationModel> postClientTestingData(
+            @Header("x-api-key") String writeKey,
+            @Body ClientTestPostDataModel clientTestPostDataModel);
+
 
 }

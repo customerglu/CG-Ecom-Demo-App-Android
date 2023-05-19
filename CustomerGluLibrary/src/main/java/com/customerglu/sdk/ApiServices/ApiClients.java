@@ -5,6 +5,7 @@ import static com.customerglu.sdk.Utils.URLHelper.dev_BaseUrl;
 
 import com.customerglu.sdk.CustomerGlu;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -21,23 +22,21 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClients {
     public static String bearer_token = "";
-
     public static Retrofit retrofit = null;
     private static Retrofit retrofit1 = null;
     private static OkHttpClient okHttpClient1;
 
 
     public static Retrofit getClient_token() {
-//        Gson gson = new GsonBuilder()
-//                .setLenient()
-//                .create();
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .create();
 
         initOkHttp_token();
 
         if (retrofit1 == null) {
             retrofit1 = new Retrofit.Builder()
-                    .baseUrl(dev_BaseUrl)
+                    .baseUrl(BaseUrl)
                     .client(okHttpClient1)
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create(gson))
@@ -67,7 +66,9 @@ public class ApiClients {
                 Request.Builder requestBuilder = original.newBuilder()
                         .addHeader("Accept", "application/json")
                         .header("Content-Type", "application/json")
-                        .addHeader("cg-sdk-version", "2.3.4");
+                        .addHeader("cg-sdk-version", CustomerGlu.cg_sdk_version)
+                        .addHeader("cg-sdk-platform", CustomerGlu.cg_app_platform);
+
                 Request request = requestBuilder.build();
                 return chain.proceed(request);
             }

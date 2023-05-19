@@ -24,13 +24,65 @@ public class CGConstants {
         EXCEPTION
     }
 
+    public enum TEST_STATE {
+        IN_PROGRESS,
+        SUCCESS,
+        FAILURE
+    }
 
+    public enum TEST_NAME_ENUM {
+        SDK_INITIALIZED,
+        USER_REGISTERED,
+        CALLBACK_HANDLING,
+        NUDGE_HANDLING,
+        ONELINK_HANDLING,
+        ENTRYPOINTS_SET_UP,
+        ENTRYPOINTS_SCREENNAME_SET_UP,
+        ENTRYPOINTS_BANNERID_SET_UP,
+        ENTRYPOINTS_EMBEDID_SET_UP,
+        FIREBASE_PRIVATE_KEY,
+        FIREBASE_TOKEN_SHARED,
+        APNS_PRIVATE_KEY,
+        APNS_TOKEN_SHARED
+
+    }
+
+
+    public enum TEST_TYPE {
+        BASIC,
+        ADVANCED
+    }
+
+    // Client Test Page Constants
+    public static final int headingViewType = 0;
+    public static final int subHeadingViewType = 1;
+    public static final int valueViewType = 2;
+
+
+    public static final String SDK_INITIALISED = "SDK Initialised";
+    public static final String USER_REGISTERED = "User Registered";
+    public static final String CALLBACK_HANDLING = "Callback Handling";
+    public static final String NUDGE_HANDLING = "Nudge Handling";
+    public static final String ONE_LINK_HANDLING = "CG Deeplink Handling";
+    public static final String SENDING_EVENTS = "Sending Events";
+    public static final String ENTRY_POINTS_SET_UP = "EntryPoints Setup";
+    public static final String ENTRY_POINTS_SCREEN_SET_UP = "ScreenName Setup";
+    public static final String ENTRY_POINTS_BANNER_ID_SET_UP = "BannerId Setup";
+    public static final String ENTRY_POINTS_EMBED_ID_SET_UP = "EmbedId Setup";
+    public static final String FIREBASE_PRIVATE_SEVER_KEY = "Firebase Server Key Setup";
+    public static final String FIREBASE_TOKEN = "Firebase Token";
+    public static final String FIREBASE_SETUP = "Firebase Setup";
+
+    public static final String ETAG = "etag";
     public static final String CG_PLATFORM_VALUE = "android-native-sdk";
     public static final String CG_PLATFORM_KEY = "cg-app-platform";
     public static final String CG_SDK_VERSION_KEY = "cg-sdk-version";
-    public static final String CG_SDK_VERSION_VAL = "2.3.4";
+    public static final String CG_SDK_VERSION_VAL = "2.3.6";
     public static final String MQTT_SERVER_HOST = "hermes.customerglu.com";
     public static final String DEV_MQTT_SERVER_HOST = "dev-hermes.customerglu.com";
+
+    public static final String OPEN_CLIENT_TESTING_PAGE = "OPEN_CLIENT_TESTING_PAGE";
+
 
     public enum LOTTIE_FILE {
         LIGHT,
@@ -40,6 +92,10 @@ public class CGConstants {
     }
 
 
+    public static final String CAMPAIGN_STATE_UPDATED = "CAMPAIGN_STATE_UPDATED";
+    public static final String SDK_CONFIG_UPDATED = "SDK_CONFIG_UPDATED";
+    public static final String USER_SEGMENT_UPDATED = "USER_SEGMENT_UPDATED";
+
     // One Link DEEPLINK SUPPORT
 
     public static final String OPEN_CAMPAIGN = "OPEN_CAMPAIGN";
@@ -47,6 +103,14 @@ public class CGConstants {
     public static final String OPEN_DEEPLINK = "OPEN_DEEPLINK";
     public static final String OPEN_WEBLINK = "OPEN_WEBLINK";
     public static final String CG_GLU_US = "cglu.us";
+
+
+    // Patterns
+
+    public static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    // Open Wallet
+
+    public static final String CG_OPEN_WALLET = "CG-OPEN-WALLET";
 
     // Error page URl
 
@@ -171,8 +235,6 @@ public class CGConstants {
             "}";
     public static final String URL_REGEX = "[(http(s)?):\\/\\/(www\\.)?a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)";
     public static String register_response = "";
-
     public static String load_campaign_response = "";
-
 
 }

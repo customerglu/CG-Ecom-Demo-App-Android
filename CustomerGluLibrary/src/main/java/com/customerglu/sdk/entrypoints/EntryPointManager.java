@@ -3,11 +3,13 @@ package com.customerglu.sdk.entrypoints;
 
 import static android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM;
 import static com.customerglu.sdk.CustomerGlu.myThread;
+import static com.customerglu.sdk.Utils.CGConstants.CG_OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_DISMISS;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
 import static com.customerglu.sdk.Utils.CGConstants.FLOATING_DATE;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
@@ -118,7 +120,7 @@ public class EntryPointManager extends View {
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                System.out.println("==================Recieved============");
+                printDebugLogs("==================Recieved============");
                 if (intent.getAction().equalsIgnoreCase("CUSTOMERGLU_ENTRY_POINT_DATA")) {
                     if (!isLoaded) {
                         getEntryPointData();
@@ -135,7 +137,6 @@ public class EntryPointManager extends View {
         screenWidth = displayMetrics.widthPixels;
 
         if (CustomerGlu.isBannerEntryPointsEnabled && CustomerGlu.isBannerEntryPointsHasData) {
-            System.out.println("=tre");
 
             getEntryPointData();
         }
@@ -159,7 +160,6 @@ public class EntryPointManager extends View {
 
     public void getEntryPointData() {
 
-
         try {
             String current_date = new SimpleDateFormat("dd", Locale.getDefault()).format(new Date());
             new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -172,7 +172,6 @@ public class EntryPointManager extends View {
                     } else {
                         if (entryPointsModel.getSuccess()) {
                             isLoaded = true;
-                            System.out.println("eventId t");
                             for (int i = 0; i < CustomerGlu.entryPointId.size(); i++) {
                                 @SuppressLint("ResourceType") View myView = ((Activity) context).findViewById(CustomerGlu.entryPointId.get(i));
                                 if (myView != null) {
@@ -341,7 +340,6 @@ public class EntryPointManager extends View {
                                                                             ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                         }
                                                                     }
-
 
                                                                 }
                                                             } else if (!daily_refresh_date.equalsIgnoreCase(date)) {
@@ -579,6 +577,10 @@ public class EntryPointManager extends View {
                                 if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
                                     CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
                                 }
+                                break;
+
+                            case OPEN_WALLET:
+                                CustomerGlu.getInstance().loadPopUpBanner(context, CG_OPEN_WALLET, entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
                                 break;
 
                             default:
@@ -891,6 +893,7 @@ public class EntryPointManager extends View {
                                 absoluteHeight = entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight();
                             }
                             if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction() != null) {
+
                                 switch (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getType()) {
                                     case OPEN_DEEPLINK:
                                         if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
@@ -923,6 +926,10 @@ public class EntryPointManager extends View {
                                         if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
                                             CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
                                         }
+                                        break;
+
+                                    case OPEN_WALLET:
+                                        CustomerGlu.getInstance().loadPopUpBanner(context, CG_OPEN_WALLET, entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), absoluteHeight, relativeHeight, isClose);
                                         break;
 
                                     default:

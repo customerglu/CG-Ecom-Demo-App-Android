@@ -54,6 +54,7 @@ import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_WORMHOLE_CALL
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_WORMHOLE_FAILURE;
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_WORMHOLE_RESPONSE;
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_WORMHOLE_SUCCESS;
+import static com.customerglu.sdk.Utils.CGConstants.CG_OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.CG_USER_DATA;
 import static com.customerglu.sdk.Utils.CGConstants.CLIENT_ID;
 import static com.customerglu.sdk.Utils.CGConstants.CUSTOMERGLU_TOKEN;
@@ -66,6 +67,8 @@ import static com.customerglu.sdk.Utils.CGConstants.ENCRYPTED_CUSTOMERGLU_USER_I
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_DISMISS;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
+import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
+import static com.customerglu.sdk.Utils.CGConstants.ETAG;
 import static com.customerglu.sdk.Utils.CGConstants.FLUTTER;
 import static com.customerglu.sdk.Utils.CGConstants.HASH_CODE;
 import static com.customerglu.sdk.Utils.CGConstants.IS_LOGIN;
@@ -74,6 +77,7 @@ import static com.customerglu.sdk.Utils.CGConstants.LOTTIE_FILE;
 import static com.customerglu.sdk.Utils.CGConstants.MQTT_IDENTIFIER;
 import static com.customerglu.sdk.Utils.CGConstants.NOTIFICATION_LOAD;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.CGConstants.POPUP_DATE;
 import static com.customerglu.sdk.Utils.CGConstants.PUSH_NOTIFICATION_CLICK;
@@ -126,6 +130,7 @@ import com.customerglu.sdk.Interface.MqttListener;
 import com.customerglu.sdk.Interface.RewardInterface;
 import com.customerglu.sdk.Modal.CGConfigData;
 import com.customerglu.sdk.Modal.CGConfigurationModel;
+import com.customerglu.sdk.Modal.Campaigns;
 import com.customerglu.sdk.Modal.ConfigurationData;
 import com.customerglu.sdk.Modal.DeepLinkWormholeModel;
 import com.customerglu.sdk.Modal.EntryPointsData;
@@ -147,7 +152,8 @@ import com.customerglu.sdk.Utils.DiagnosticsHelper;
 import com.customerglu.sdk.Utils.Prefs;
 import com.customerglu.sdk.Utils.SentryHelper;
 import com.customerglu.sdk.Web.FilterReward;
-import com.customerglu.sdk.Web.OpenCustomerGluWeb;
+import com.customerglu.sdk.cgRxBus.CGRxBus;
+import com.customerglu.sdk.clienttesting.ClientTestingPage;
 import com.customerglu.sdk.entrypoints.EntryPointManager;
 import com.customerglu.sdk.mqtt.CGMqttClientHelper;
 import com.customerglu.sdk.notification.BottomDialog;
@@ -195,6 +201,8 @@ import retrofit2.Response;
 public class CustomerGlu {
 
     public static EntryPointsModel entryPointsModel;
+    public static RewardModel loadCampaignResponse;
+    public static ArrayList<String> campaignIdList;
     public CGDeepLinkListener cgDeepLinkListener;
     public static boolean sdk_disable = false;
     public static boolean isPrecachingEnable = false;
@@ -225,7 +233,6 @@ public class CustomerGlu {
     public static boolean isLottieDownload = false;
     public static HashMap<String, Boolean> dismissedEntryPoints;
     public static List<Integer> entryPointId;
-    ArrayList<String> campaignIdList;
     public static List<String> displayScreen;
     public static List<String> screenList;
     public static List<String> bannerIdList;
@@ -252,29 +259,36 @@ public class CustomerGlu {
     private String token = "", user_id = "";
     private RegisterModal registerModal;
     public static RegisterModal.User cgUserData;
-    List<String> popupdisallowedList;
-    List<String> popupallowedList;
+    //    List<String> popupdisallowedList;
+//    List<String> popupallowedList;
     public static String dismiss_trigger = "UI_BUTTON";
     public static String cg_app_platform = "ANDROID";
-    public static String cg_sdk_version = "2.3.4";
+    public static String cg_sdk_version = "2.3.6";
     private static String writeKey = "";
     public static boolean debugEnvironment = false;
-    public static String darkStatusBarColor="";
-    public static String lightStatusBarColor="";
+    public static String darkStatusBarColor;
+    public static String lightStatusBarColor;
     public static String clientId;
     public static DiagnosticsHelper diagnosticsHelper;
     public static boolean isDiagnosticsEnabled = false;
     public static boolean isMetricsEnabled = true;
     public static boolean isCrashLoggingEnabled = true;
     public static boolean allowAnonymousRegistration = false;
+    public static boolean allowOpenWallet = true;
+    static Disposable mqttBusDisposable;
     public static boolean isMqttEnabled = false;
     public static boolean isMqttConnected = false;
     public static int apiRetryCount = 3;
+    public static String clientDeeplinkUrl = "";
+    public static String callbackConfigurationUrl = "";
+    public static CGRxBus cgrxBus;
 
+    private static String LoadCampaignETAG = "";
+    private static String EntryPointETAG = "";
 
     private CustomerGlu() {
         s = "CustomerGlu Singleton class";
-        System.out.println(s);
+        printDebugLogs(s);
     }
 
     /**
@@ -293,6 +307,10 @@ public class CustomerGlu {
             embedIdList = new ArrayList<>();
             testUserIdList = new ArrayList<>();
             entryPointsModel = null;
+            cgrxBus = new CGRxBus();
+            loadCampaignResponse = null;
+            campaignIdList = new ArrayList<>();
+
         }
 
         return single_instance;
@@ -306,11 +324,9 @@ public class CustomerGlu {
      * all SDK configuration
      */
     public void initializeSdk(Context context) {
-        Log.d("CustomerGlu", "Initializing SDK");
+        printDebugLogs("Initializing SDK");
         diagnosticsHelper = DiagnosticsHelper.getInstance();
         diagnosticsHelper.initDiagnostics(context, getWriteKey(context));
-        //    Bugfender.init(context, "D0Wl6IqPaYwkPACmo9GYu1aD2NBKQiZ7", BuildConfig.DEBUG);
-        //  Bugfender.enableCrashReporting()
         boolean writeKeyPresent = false;
         boolean userRegistered = false;
         if (!getWriteKey(context).isEmpty()) {
@@ -345,7 +361,7 @@ public class CustomerGlu {
 
     private void settingInitializeConfiguration(Context globalContext, String writeKey) {
         if (isOnline(globalContext)) {
-            Log.d("CustomerGlu", "settingInitializeConfiguration SDK");
+            printDebugLogs(" settingInitializeConfiguration SDK");
             ArrayList<MetaData> metaData = new ArrayList<>();
             metaData.add(new MetaData("writeKey", getWriteKey(globalContext)));
             diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_CONFIG_CALLED, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData);
@@ -400,178 +416,188 @@ public class CustomerGlu {
                                 }
                                 if (mobile.getLoaderColor() != null && !mobile.getLoaderColor().isEmpty()) {
                                     configure_loader_color = mobile.getLoaderColor();
-                                }
-                                if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getLoaderURL() != null && mobile.getLoaderConfig().getLoaderURL().getLight() != null && !mobile.getLoaderConfig().getLoaderURL().getLight().isEmpty()) {
-                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getLoaderURL().getLight()).matches()) {
-                                        String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getLight().split("/");
-                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                        String cachedLottieFileName = Prefs.getKey(globalContext, LIGHT_LOTTIE_FILE_NAME);
-                                        if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
+                                    if (mobile.getDeeplinkUrl() != null) {
+                                        clientDeeplinkUrl = mobile.getDeeplinkUrl();
+                                    }
+                                    if (mobile.getCallbackConfigurationUrl() != null && !mobile.getCallbackConfigurationUrl().isEmpty()) {
+                                        callbackConfigurationUrl = mobile.getCallbackConfigurationUrl();
+                                    }
+                                    if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getLoaderURL() != null && mobile.getLoaderConfig().getLoaderURL().getLight() != null && !mobile.getLoaderConfig().getLoaderURL().getLight().isEmpty()) {
+                                        if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getLoaderURL().getLight()).matches()) {
+                                            String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getLight().split("/");
+                                            String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                            String cachedLottieFileName = Prefs.getKey(globalContext, LIGHT_LOTTIE_FILE_NAME);
+                                            if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
 
-                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getLight(), LOTTIE_FILE.LIGHT, lottieFileName);
+                                                saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getLight(), LOTTIE_FILE.LIGHT, lottieFileName);
+                                            }
                                         }
                                     }
-                                }
-                                if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getLoaderURL() != null && mobile.getLoaderConfig().getLoaderURL().getDark() != null && !mobile.getLoaderConfig().getLoaderURL().getDark().isEmpty()) {
-                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getLoaderURL().getDark()).matches()) {
+                                    if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getLoaderURL() != null && mobile.getLoaderConfig().getLoaderURL().getDark() != null && !mobile.getLoaderConfig().getLoaderURL().getDark().isEmpty()) {
+                                        if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getLoaderURL().getDark()).matches()) {
 
-                                        String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getDark().split("/");
-                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                        String cachedDarkLottieFileName = Prefs.getKey(globalContext, DARK_LOTTIE_FILE_NAME);
-                                        if (!lottieFileName.equalsIgnoreCase(cachedDarkLottieFileName)) {
-                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getDark(), LOTTIE_FILE.DARK, lottieFileName);
+                                            String[] lottieFileSplit = mobile.getLoaderConfig().getLoaderURL().getDark().split("/");
+                                            String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                            String cachedDarkLottieFileName = Prefs.getKey(globalContext, DARK_LOTTIE_FILE_NAME);
+                                            if (!lottieFileName.equalsIgnoreCase(cachedDarkLottieFileName)) {
+                                                saveLottieFile(globalContext, mobile.getLoaderConfig().getLoaderURL().getDark(), LOTTIE_FILE.DARK, lottieFileName);
+                                            }
                                         }
                                     }
-                                }
-                                if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getEmbedLoaderURL() != null && mobile.getLoaderConfig().getEmbedLoaderURL().getLight() != null && !mobile.getLoaderConfig().getEmbedLoaderURL().getLight().isEmpty()) {
-                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getEmbedLoaderURL().getLight()).matches()) {
-                                        String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getLight().split("/");
-                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                        String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_LIGHT_LOTTIE_FILE_NAME);
-                                        if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
-                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getLight(), LOTTIE_FILE.EMBED_LIGHT, lottieFileName);
+                                    if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getEmbedLoaderURL() != null && mobile.getLoaderConfig().getEmbedLoaderURL().getLight() != null && !mobile.getLoaderConfig().getEmbedLoaderURL().getLight().isEmpty()) {
+                                        if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getEmbedLoaderURL().getLight()).matches()) {
+                                            String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getLight().split("/");
+                                            String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                            String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_LIGHT_LOTTIE_FILE_NAME);
+                                            if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
+                                                saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getLight(), LOTTIE_FILE.EMBED_LIGHT, lottieFileName);
+                                            }
                                         }
                                     }
-                                }
-                                if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getEmbedLoaderURL() != null && mobile.getLoaderConfig().getEmbedLoaderURL().getDark() != null && !mobile.getLoaderConfig().getEmbedLoaderURL().getDark().isEmpty()) {
-                                    if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getEmbedLoaderURL().getDark()).matches()) {
+                                    if (mobile.getLoaderConfig() != null && mobile.getLoaderConfig().getEmbedLoaderURL() != null && mobile.getLoaderConfig().getEmbedLoaderURL().getDark() != null && !mobile.getLoaderConfig().getEmbedLoaderURL().getDark().isEmpty()) {
+                                        if (Patterns.WEB_URL.matcher(mobile.getLoaderConfig().getEmbedLoaderURL().getDark()).matches()) {
 
-                                        String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getDark().split("/");
-                                        String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
-                                        String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_DARK_LOTTIE_FILE_NAME);
-                                        if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
-                                            saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getDark(), LOTTIE_FILE.EMBED_DARK, lottieFileName);
+                                            String[] lottieFileSplit = mobile.getLoaderConfig().getEmbedLoaderURL().getDark().split("/");
+                                            String lottieFileName = lottieFileSplit[lottieFileSplit.length - 1];
+                                            String cachedLottieFileName = Prefs.getKey(globalContext, EMBED_DARK_LOTTIE_FILE_NAME);
+                                            if (!lottieFileName.equalsIgnoreCase(cachedLottieFileName)) {
+                                                saveLottieFile(globalContext, mobile.getLoaderConfig().getEmbedLoaderURL().getDark(), LOTTIE_FILE.EMBED_DARK, lottieFileName);
+                                            }
                                         }
                                     }
-                                }
-                                if (mobile.getAndroidStatusBarColor() != null) {
-                                    if (isValidColor(mobile.getAndroidStatusBarColor())) {
-                                        configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarColor());
-                                        lightStatusBarColor = rgbaToArgb(mobile.getAndroidStatusBarColor());
-                                    } else {
-                                        configure_status_bar_color = "#000000";
-                                        lightStatusBarColor = "#FFFFFF";
-                                    }
-                                }
-                                if (mobile.getLightBackground() != null) {
-                                    if (isValidColor(mobile.getLightBackground())) {
-                                        lightBackground = rgbaToArgb(mobile.getLightBackground());
-                                    } else {
-                                        lightBackground = "#FFFFFF";
-                                    }
-                                }
-                                if (mobile.getDarkBackground() != null) {
-                                    if (isValidColor(mobile.getDarkBackground())) {
-                                        darkBackground = rgbaToArgb(mobile.getDarkBackground());
-                                    } else {
-                                        darkBackground = "#000000";
-                                    }
-                                }
-                                if (mobile.getErrorCodeForDomain() != null) {
-                                    errorCodeForDomain = mobile.getErrorCodeForDomain();
-                                }
-                                if (mobile.getErrorMessageForDomain() != null) {
-                                    errorMessageForDomain = mobile.getErrorMessageForDomain();
-                                }
-                                if (mobile.getAllowUserRegistration() != null) {
-                                    allowUserRegistration = mobile.getAllowUserRegistration();
-                                }
-                                if (mobile.getForceUserRegistration() != null) {
-                                    forceUserRegistration = mobile.getForceUserRegistration();
-                                }
-                                if (mobile.getWhiteListedDomains() != null) {
-                                    whiteListDomain = mobile.getWhiteListedDomains();
-                                }
-                                if (mobile.getListenToSystemDarkLightMode() != null) {
-                                    listenToSystemDarkLightMode = mobile.getListenToSystemDarkLightMode();
-
-
-                                }
-                                if (mobile.getEnableDarkMode() != null) {
-                                    isDarkMode = mobile.getEnableDarkMode();
-                                }
-                                if (isBannerEntryPointsEnabled) {
-                                    CustomerGlu.getInstance().enableEntryPoints(globalContext, true);
-                                }
-                                if (mobile.getAllowAnonymousRegistration() != null) {
-                                    allowAnonymousRegistration = mobile.getAllowAnonymousRegistration();
-                                }
-
-                                if (isDarkModeEnabled(globalContext)) {
-                                    if (mobile.getAndroidStatusBarDarkColor() != null) {
-                                        if (isValidColor(mobile.getAndroidStatusBarDarkColor())) {
-                                            configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarDarkColor());
-                                            darkStatusBarColor = rgbaToArgb(mobile.getAndroidStatusBarDarkColor());
+                                    if (mobile.getAndroidStatusBarColor() != null) {
+                                        if (isValidColor(mobile.getAndroidStatusBarColor())) {
+                                            configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarColor());
+                                            lightStatusBarColor = rgbaToArgb(mobile.getAndroidStatusBarColor());
                                         } else {
                                             configure_status_bar_color = "#000000";
-                                            darkStatusBarColor = "#000000";
+                                            lightStatusBarColor = "#FFFFFF";
                                         }
                                     }
-                                } else {
-                                    if (mobile.getAndroidStatusBarLightColor() != null) {
-                                        if (isValidColor(mobile.getAndroidStatusBarLightColor())) {
-                                            configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarLightColor());
+                                    if (mobile.getLightBackground() != null) {
+                                        if (isValidColor(mobile.getLightBackground())) {
+                                            lightBackground = rgbaToArgb(mobile.getLightBackground());
                                         } else {
-                                            configure_status_bar_color = "#FFFFFF";
+                                            lightBackground = "#FFFFFF";
                                         }
                                     }
-                                }
-                                if (mobile.getActivityIdList() != null) {
-                                    if (mobile.getActivityIdList().getAndroid() != null) {
-                                        screenList = mobile.getActivityIdList().getAndroid();
+                                    if (mobile.getDarkBackground() != null) {
+                                        if (isValidColor(mobile.getDarkBackground())) {
+                                            darkBackground = rgbaToArgb(mobile.getDarkBackground());
+                                        } else {
+                                            darkBackground = "#000000";
+                                        }
                                     }
-                                }
-                                if (mobile.getBannerIds() != null) {
-                                    if (mobile.getBannerIds().getAndroid() != null) {
-                                        bannerIdList = mobile.getBannerIds().getAndroid();
+                                    if (mobile.getErrorCodeForDomain() != null) {
+                                        errorCodeForDomain = mobile.getErrorCodeForDomain();
                                     }
-                                }
-                                if (mobile.getEmbedIds() != null) {
-                                    if (mobile.getEmbedIds().getAndroid() != null) {
-                                        embedIdList = mobile.getEmbedIds().getAndroid();
+                                    if (mobile.getErrorMessageForDomain() != null) {
+                                        errorMessageForDomain = mobile.getErrorMessageForDomain();
                                     }
-                                }
-                                if (mobile.getTestUserIds() != null) {
-                                    testUserIdList = mobile.getTestUserIds();
-                                }
-                                if (mobile.getEnableMqtt() != null) {
-                                    isMqttEnabled = mobile.getEnableMqtt();
-                                }
+                                    if (mobile.getAllowUserRegistration() != null) {
+                                        allowUserRegistration = mobile.getAllowUserRegistration();
+                                    }
+                                    if (mobile.getForceUserRegistration() != null) {
+                                        forceUserRegistration = mobile.getForceUserRegistration();
+                                    }
+                                    if (mobile.getWhiteListedDomains() != null) {
+                                        whiteListDomain = mobile.getWhiteListedDomains();
+                                    }
+                                    if (mobile.getListenToSystemDarkLightMode() != null) {
+                                        listenToSystemDarkLightMode = mobile.getListenToSystemDarkLightMode();
 
-                                if (isMqttEnabled) {
-                                    initializeMqtt();
+
+                                    }
+                                    if (mobile.getEnableDarkMode() != null) {
+                                        isDarkMode = mobile.getEnableDarkMode();
+                                    }
+                                    if (isBannerEntryPointsEnabled) {
+                                        CustomerGlu.getInstance().enableEntryPoints(globalContext, true);
+                                    }
+                                    if (mobile.getAllowAnonymousRegistration() != null) {
+                                        allowAnonymousRegistration = mobile.getAllowAnonymousRegistration();
+                                    }
+
+                                    if (isDarkModeEnabled(globalContext)) {
+                                        if (mobile.getAndroidStatusBarDarkColor() != null) {
+                                            if (isValidColor(mobile.getAndroidStatusBarDarkColor())) {
+                                                configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarDarkColor());
+                                                darkStatusBarColor = rgbaToArgb(mobile.getAndroidStatusBarDarkColor());
+                                            } else {
+                                                configure_status_bar_color = "#000000";
+                                                darkStatusBarColor = "#000000";
+                                            }
+                                        }
+                                    } else {
+                                        if (mobile.getAndroidStatusBarLightColor() != null) {
+                                            if (isValidColor(mobile.getAndroidStatusBarLightColor())) {
+                                                configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarLightColor());
+                                            } else {
+                                                configure_status_bar_color = "#FFFFFF";
+                                            }
+                                        }
+                                    }
+                                    if (mobile.getActivityIdList() != null) {
+                                        if (mobile.getActivityIdList().getAndroid() != null) {
+                                            screenList = mobile.getActivityIdList().getAndroid();
+                                        }
+                                    }
+                                    if (mobile.getBannerIds() != null) {
+                                        if (mobile.getBannerIds().getAndroid() != null) {
+                                            bannerIdList = mobile.getBannerIds().getAndroid();
+                                        }
+                                    }
+                                    if (mobile.getEmbedIds() != null) {
+                                        if (mobile.getEmbedIds().getAndroid() != null) {
+                                            embedIdList = mobile.getEmbedIds().getAndroid();
+                                        }
+                                    }
+                                    if (mobile.getTestUserIds() != null) {
+                                        testUserIdList = mobile.getTestUserIds();
+                                    }
+
+
+                                    if (mobile.getEnableMqtt() != null) {
+                                        isMqttEnabled = mobile.getEnableMqtt();
+                                    }
+
+
+                                    if (isMqttEnabled && android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                                        initializeMqtt();
+                                    }
+
+                                    String islogIn = Prefs.getEncKey(globalContext, CGConstants.IS_LOGIN);
+                                    if (islogIn.equalsIgnoreCase("true")) {
+                                        isLoginWithUserId = true;
+                                    }
+
+                                    String myUserData = Prefs.getEncKey(globalContext, CG_USER_DATA);
+
+                                    if (!myUserData.isEmpty()) {
+                                        cgUserData = gson.fromJson(myUserData, RegisterModal.User.class);
+
+                                    }
+                                    printDebugLogs("settingInitializeConfiguration Done");
+
                                 }
-
-                                String islogIn = Prefs.getEncKey(globalContext, CGConstants.IS_LOGIN);
-                                if (islogIn.equalsIgnoreCase("true")) {
-                                    isLoginWithUserId = true;
-                                }
-
-                                String myUserData = Prefs.getEncKey(globalContext, CG_USER_DATA);
-
-                                if (!myUserData.isEmpty()) {
-                                    cgUserData = gson.fromJson(myUserData, RegisterModal.User.class);
-
-                                }
-                                Log.d("CustomerGlu", "settingInitializeConfiguration Done");
+                                printDebugLogs("settingInitializeConfiguration Done");
 
                             }
-
                         }
-                    }
-                    boolean writeKeyPresent = false;
-                    boolean userRegistered = false;
-                    if (!getWriteKey(globalContext).isEmpty()) {
-                        writeKeyPresent = true;
-                    }
+                        boolean writeKeyPresent = false;
+                        boolean userRegistered = false;
+                        if (!getWriteKey(globalContext).isEmpty()) {
+                            writeKeyPresent = true;
+                        }
 
-                    if (!Prefs.getEncKey(globalContext, ENCRYPTED_CUSTOMERGLU_TOKEN).isEmpty()) {
-                        userRegistered = true;
+                        if (!Prefs.getEncKey(globalContext, ENCRYPTED_CUSTOMERGLU_TOKEN).isEmpty()) {
+                            userRegistered = true;
+                        }
+                        ArrayList<MetaData> metaData = new ArrayList<>();
+                        metaData.add(new MetaData("writeKeyPresent", "" + writeKeyPresent));
+                        metaData.add(new MetaData("userRegistered", "" + userRegistered));
+                        diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_INIT_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
                     }
-                    ArrayList<MetaData> metaData = new ArrayList<>();
-                    metaData.add(new MetaData("writeKeyPresent", "" + writeKeyPresent));
-                    metaData.add(new MetaData("userRegistered", "" + userRegistered));
-                    diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_INIT_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
                 }
 
                 @Override
@@ -650,29 +676,28 @@ public class CustomerGlu {
             @Override
             public void onDataReceived(CGConstants.CGSTATE state, MqttDataModel data, Throwable throwable) {
                 if (data != null && state == CGConstants.CGSTATE.SUCCESS) {
+                    String id = "";
                     ArrayList<MetaData> responseMetaData = new ArrayList();
-                    responseMetaData.add(new MetaData("id", data.getId()));
+                    if (data.getId() != null) {
+                        id = data.getId();
+                    }
+                    responseMetaData.add(new MetaData("id", id));
                     responseMetaData.add(new MetaData("type", data.getId()));
                     CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_MQTT_CALLBACK_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
 
-                    System.out.println("RxBus data" + data);
-                    if (data.getType().equalsIgnoreCase(CGConstants.ENTRYPOINT)) {
-                        CustomerGlu.getInstance().retrieveData(globalContext, new RewardInterface() {
-                            @Override
-                            public void onSuccess(RewardModel rewardModel) {
-                                String entryPointId = data.getId();
-                                updateEntryPoints(entryPointId);
-
-                            }
-
-                            @Override
-                            public void onFailure(String message) {
-                                ArrayList<MetaData> responseMetaData = new ArrayList();
-                                responseMetaData.add(new MetaData("method", "mqttCallBack"));
-                                responseMetaData.add(new MetaData("Failure in loadCampaign ", message.toString()));
-                                CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_MQTT_CALLBACK_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                            }
-                        });
+                    //  System.out.println("RxBus data" + data);
+                    switch (data.getType()) {
+                        case CGConstants.ENTRYPOINT:
+                        case CGConstants.USER_SEGMENT_UPDATED:
+                        case CGConstants.CAMPAIGN_STATE_UPDATED:
+                            doLoadCampaignAndEntryPointCall(data);
+                            break;
+                        case CGConstants.SDK_CONFIG_UPDATED:
+                            CustomerGlu.getInstance().initializeSdk(globalContext);
+                            break;
+                        case CGConstants.OPEN_CLIENT_TESTING_PAGE:
+                            CustomerGlu.getInstance().testIntegration();
+                            break;
 
                     }
 
@@ -692,18 +717,44 @@ public class CustomerGlu {
                         ArrayList<MetaData> responseMetaData = new ArrayList();
                         responseMetaData.add(new MetaData("data", responseData));
                         CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_MQTT_CALLBACK_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                        System.out.println("RxBus Exception" + throwable);
+                        printDebugLogs("RxBus Exception" + throwable);
                     } else {
                         ArrayList<MetaData> responseMetaData = new ArrayList();
-                        responseMetaData.add(new MetaData("data", data.toString()));
+                        responseMetaData.add(new MetaData("data", "" + data));
                         CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_MQTT_CALLBACK_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                        System.out.println("RxBus Exception" + data);
+                        printDebugLogs("RxBus Exception" + data);
                     }
                 }
 
+
             }
+
         });
         mqttClientHelper.setupMQTTClient(userId, token, clientId, identifier);
+    }
+
+    private static void doLoadCampaignAndEntryPointCall(MqttDataModel data) {
+        //    Toast.makeText(globalContext, data.getType(), Toast.LENGTH_SHORT).show();
+
+        CustomerGlu.getInstance().retrieveData(globalContext, new RewardInterface() {
+            @Override
+            public void onSuccess(RewardModel rewardModel) {
+                String entryPointId = "";
+                if (data.getId() != null) {
+                    entryPointId = data.getId();
+                }
+                updateEntryPoints(entryPointId);
+            }
+
+            @Override
+            public void onFailure(String message) {
+                ArrayList<MetaData> responseMetaData = new ArrayList();
+                responseMetaData.add(new MetaData("method", "mqttCallBack"));
+                responseMetaData.add(new MetaData("Failure in loadCampaign ", message.toString()));
+                CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_MQTT_CALLBACK_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
+            }
+        });
+
     }
 
 
@@ -803,6 +854,16 @@ public class CustomerGlu {
         }
         return false;
     }
+
+
+    public void enableMqtt(boolean isEnabled) {
+        isMqttEnabled = isEnabled;
+    }
+
+    public boolean isMqttEnabled() {
+        return isMqttEnabled;
+    }
+
 
     private static String rgbaToArgb(String color) {
         if (color.length() > 7) {
@@ -915,6 +976,7 @@ public class CustomerGlu {
                             }
                         }
                     } catch (Exception e) {
+
                         ArrayList<MetaData> failureMetaData = new ArrayList<>();
                         failureMetaData.add(new MetaData("Exception", e.toString()));
                         diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_WORMHOLE_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, failureMetaData);
@@ -964,20 +1026,13 @@ public class CustomerGlu {
             if (cgDeepLinkListener != null) {
                 cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.DEEPLINK_URL, deepLinkData);
             }
-//            if (deepLinkData.getContent().getUrl() != null) {
-//                displayCGNudge(globalContext, deepLinkData.getContent().getUrl(), nudgeConfiguration);
-//                cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
-//            } else {
-//                openWallet(globalContext, nudgeConfiguration);
-//                cgDeepLinkListener.onFailure(CGConstants.CGSTATE.INVALID_URL);
-//            }
+
         }
         if (type.equalsIgnoreCase("c")) {
             if (deepLinkData.getContent().getCampaignId() != null) {
                 retrieveData(globalContext, new RewardInterface() {
                     @Override
                     public void onSuccess(RewardModel rewardModel) {
-                        campaignIdList = new ArrayList<>();
                         boolean campaignFound = false;
                         String campaignUrl = "";
 
@@ -986,7 +1041,6 @@ public class CustomerGlu {
                                 for (int i = 0; i < rewardModel.getCampaigns().size(); i++) {
                                     if (rewardModel.getCampaigns() != null && rewardModel.getCampaigns().size() > 0) {
                                         if (rewardModel.getCampaigns().get(i).getCampaignId() != null) {
-                                            campaignIdList.add(rewardModel.getCampaigns().get(i).getCampaignId());
                                             if (rewardModel.getCampaigns().get(i).getCampaignId().equalsIgnoreCase(deepLinkData.getContent().getCampaignId())) {
                                                 campaignUrl = rewardModel.getCampaigns().get(i).getUrl();
                                                 campaignFound = true;
@@ -1000,7 +1054,6 @@ public class CustomerGlu {
                         if (campaignFound) {
                             displayCGNudge(globalContext, campaignUrl, nudgeConfiguration);
                             if (cgDeepLinkListener != null) {
-
                                 cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
                             }
                         } else {
@@ -1041,14 +1094,15 @@ public class CustomerGlu {
     /**
      * Used to get Write key from Manifest
      */
-    private static String getWriteKey(Context context) {
+    public static String getWriteKey(Context context) {
         String apiKeyFromManifest = "";
         try {
             ApplicationInfo ai = context.getPackageManager().getApplicationInfo(
                     context.getPackageName(), PackageManager.GET_META_DATA);
             Bundle bundle = ai.metaData;
+
             apiKeyFromManifest = bundle.getString("CUSTOMERGLU_WRITE_KEY");
-            printDebugLogs("API KEY : " + apiKeyFromManifest);
+
         } catch (PackageManager.NameNotFoundException e) {
 
             Comman.printErrorLogs("WriteKey Not found");
@@ -1203,7 +1257,7 @@ public class CustomerGlu {
 
     public void showEntryPoint(Activity activity) {
         currentActivity = activity;
-        System.out.println("Size - " + CustomerGlu.entryPointId.size());
+        printDebugLogs("Size - " + CustomerGlu.entryPointId.size());
         for (int i = 0; i < 10; i++) {
             @SuppressLint("ResourceType") View myView = ((Activity) activity).findViewById(1000013 + i);
             if (myView != null) {
@@ -1222,7 +1276,10 @@ public class CustomerGlu {
 
     public void showEntryPoint(Activity activity, String currentScreenName) {
         currentActivity = activity;
-        System.out.println("Size - " + CustomerGlu.entryPointId.size());
+        printDebugLogs("Size - " + CustomerGlu.entryPointId.size());
+        if (entryPointManager != null) {
+            entryPointManager.popupDismissThread();
+        }
         for (int i = 0; i < 10; i++) {
             @SuppressLint("ResourceType") View myView = ((Activity) activity).findViewById(1000013 + i);
             if (myView != null) {
@@ -1296,6 +1353,7 @@ public class CustomerGlu {
         configure_banner_default_url = image_url;
         Prefs.putEncKey(context, "default_image", image_url);
     }
+
 
     /**
      * Used to close Webview on Deeplink event
@@ -1808,7 +1866,7 @@ public class CustomerGlu {
         if (CustomerGlu.isAnalyticsEventEnabled) {
             mService = Comman.getApiToken();
             String user_id = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat(CGConstants.DATE_FORMAT_PATTERN, Locale.getDefault());
             String currentDateandTime = sdf.format(new Date());
             HashMap<String, Object> nudgeData = new HashMap<>();
 
@@ -1954,7 +2012,7 @@ public class CustomerGlu {
                         userId = userId.trim();
                         if (userId.equalsIgnoreCase("")) {
                             registerObject.remove("userId");
-                            if (anonymousId.isEmpty()) {
+                            if (allowAnonymousRegistration && anonymousId.isEmpty()) {
                                 anonymousId = UUID.randomUUID().toString();
                                 Prefs.putEncKey(context, ANONYMOUSID, anonymousId);
                             }
@@ -2071,9 +2129,10 @@ public class CustomerGlu {
                                                             CGMqttClientHelper mqttClientHelper = getMqttInstance();
                                                             mqttClientHelper.disconnectMqtt();
                                                         }
-                                                        initializeMqtt();
 
-                                                        printDebugLogs("register");
+                                                        if (isMqttEnabled && android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                                                            initializeMqtt();
+                                                        }
 
 
                                                         retrieveData(context, new RewardInterface() {
@@ -2182,17 +2241,29 @@ public class CustomerGlu {
                         if (response.code() == 200 && response.body() != null) {
                             if (response.body().getSuccess() != null && response.body().getSuccess()) {
 
-                                if (response.body().getEntryPointsData() != null && response.body().getEntryPointsData().size() > 0) {
-                                    List<EntryPointsData> newEntryPointDataList = response.body().getEntryPointsData();
-                                    if (entryPointsModel != null) {
-                                        if (entryPointsModel.getEntryPointsData() != null) {
-                                            List<EntryPointsData> updatedEntryPointDataList = mergeArraysAndRemoveDuplicates(entryPointsModel.getEntryPointsData(), newEntryPointDataList);
-                                            entryPointsModel.setEntryPointsData(updatedEntryPointDataList);
-                                            Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
-                                            globalContext.sendBroadcast(intent);
-                                            getBannerHeight(globalContext, entryPointsModel);
-                                            Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
-                                            globalContext.sendBroadcast(mqttIntent);
+                                if (response.body().getEntryPointsData() != null) {
+                                    boolean updateUI = true;
+                                    if (response.headers().get(ETAG) != null) {
+                                        String eTag = response.headers().get(ETAG);
+                                        if (eTag.equalsIgnoreCase(EntryPointETAG)) {
+                                            updateUI = false;
+                                        } else {
+                                            EntryPointETAG = response.headers().get(ETAG);
+                                        }
+                                    }
+                                    if (updateUI) {
+                                        List<EntryPointsData> newEntryPointDataList = response.body().getEntryPointsData();
+                                        if (entryPointsModel != null) {
+                                            if (entryPointsModel.getEntryPointsData() != null) {
+                                                System.out.println("Broadcast Entrypoint");
+                                                List<EntryPointsData> updatedEntryPointDataList = mergeArraysAndRemoveDuplicates(entryPointsModel.getEntryPointsData(), newEntryPointDataList);
+                                                entryPointsModel.setEntryPointsData(updatedEntryPointDataList);
+                                                Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
+                                                globalContext.sendBroadcast(intent);
+                                                getBannerHeight(globalContext, entryPointsModel);
+                                                Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
+                                                globalContext.sendBroadcast(mqttIntent);
+                                            }
                                         }
                                     }
                                 }
@@ -2221,16 +2292,27 @@ public class CustomerGlu {
                         if (response.code() == 200 && response.body() != null) {
                             if (response.body().getSuccess() != null && response.body().getSuccess()) {
 
-                                if (response.body().getEntryPointsData() != null && response.body().getEntryPointsData().size() > 0) {
-                                    List<EntryPointsData> newEntryPointDataList = response.body().getEntryPointsData();
-                                    if (entryPointsModel != null) {
-                                        if (entryPointsModel.getEntryPointsData() != null) {
-                                            entryPointsModel = response.body();
-                                            Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
-                                            globalContext.sendBroadcast(intent);
-                                            getBannerHeight(globalContext, entryPointsModel);
-                                            Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
-                                            globalContext.sendBroadcast(mqttIntent);
+                                if (response.body().getEntryPointsData() != null) {
+                                    boolean updateUI = true;
+                                    if (response.headers().get(ETAG) != null) {
+                                        String eTag = response.headers().get(ETAG);
+                                        if (eTag.equalsIgnoreCase(EntryPointETAG)) {
+                                            updateUI = false;
+                                        } else {
+                                            EntryPointETAG = response.headers().get(ETAG);
+                                        }
+                                    }
+                                    if (updateUI) {
+                                        if (entryPointsModel != null) {
+                                            if (entryPointsModel.getEntryPointsData() != null) {
+                                                entryPointsModel = response.body();
+                                                System.out.println("Broadcast Entrypoint");
+                                                Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
+                                                globalContext.sendBroadcast(intent);
+                                                getBannerHeight(globalContext, entryPointsModel);
+                                                Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
+                                                globalContext.sendBroadcast(mqttIntent);
+                                            }
                                         }
                                     }
                                 }
@@ -2313,7 +2395,7 @@ public class CustomerGlu {
         //   updateEntryPointList = new ArrayList<>(hashSet);
         updateEntryPointList.addAll(currentList);
 
-        System.out.println("setWithNoDuplicates List size " + updateEntryPointList.size());
+        printDebugLogs("setWithNoDuplicates List size " + updateEntryPointList.size());
 
 //
 //        int n = 0;
@@ -2399,6 +2481,7 @@ public class CustomerGlu {
                                     } else if (response.code() == 200) {
                                         if (response.body() != null) {
                                             if (response.body().getSuccess()) {
+
                                                 ArrayList<MetaData> successMetaData = new ArrayList<>();
                                                 diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
                                                 isBannerEntryPointsHasData = true;
@@ -2406,10 +2489,11 @@ public class CustomerGlu {
                                                 getBannerCount(context, entryPointsModel);
                                                 getBannerHeight(context, entryPointsModel);
 //
-                                                System.out.println("Broadcast");
+                                                printDebugLogs("Broadcast");
 
                                                 Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
                                                 context.sendBroadcast(intent);
+
 
                                             } else {
                                                 isBannerEntryPointsHasData = false;
@@ -2557,7 +2641,7 @@ public class CustomerGlu {
 
         String current_date = new SimpleDateFormat("dd", Locale.getDefault()).format(new Date());
         if (CustomerGlu.isBannerEntryPointsEnabled && !CustomerGlu.sdk_disable) {
-            entryPointManager.popupDismissThread();
+            // entryPointManager.popupDismissThread();
             Thread thread = new Thread(new Runnable() {
 
                 @Override
@@ -2894,7 +2978,7 @@ public class CustomerGlu {
                                             int delay = entryPointsDataList.get(index).getMobileData().getConditions().getDelay();
                                             delay = delay * 1000;
                                             Thread.sleep(delay);
-                                            Log.e("CustomerGlu", " Count - " + entryPointsDataList.get(index).get_id() + " " + count);
+                                            printDebugLogs(" Count - " + entryPointsDataList.get(index).get_id() + " " + count);
 
                                             campaignCountObj.remove(entryPointsDataList.get(index).get_id());
                                             campaignCountObj.put(entryPointsDataList.get(index).get_id(), newCount);
@@ -2981,7 +3065,9 @@ public class CustomerGlu {
 
 
     private void loadWeblink(Context context, ArrayList<EntryPointsData> entryPointsDataList, int i, String opacity) {
+
         if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction() != null) {
+
             switch (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getType()) {
                 case OPEN_DEEPLINK:
                     if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
@@ -3016,6 +3102,10 @@ public class CustomerGlu {
                     }
                     break;
 
+                case OPEN_WALLET:
+                    CustomerGlu.getInstance().loadPopUpBanner(context, CG_OPEN_WALLET, entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getCloseOnDeepLink());
+                    break;
+
                 default:
                     CustomerGlu.getInstance().loadPopUpBanner(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout(), entryPointsDataList.get(i).getMobileData().getConditions().getBackgroundOpacity(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getAbsoluteHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getRelativeHeight(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getCloseOnDeepLink());
             }
@@ -3035,8 +3125,8 @@ public class CustomerGlu {
 
             if (entryPointsDataList.get(i).getMobileData().getContainer().getAndroid() != null) {
 
-                popupallowedList = entryPointsDataList.get(i).getMobileData().getContainer().getAndroid().getAllowedActitivityList();
-                popupdisallowedList = entryPointsDataList.get(i).getMobileData().getContainer().getAndroid().getDisallowedActitivityList();
+                List<String> popupallowedList = entryPointsDataList.get(i).getMobileData().getContainer().getAndroid().getAllowedActitivityList();
+                List<String> popupdisallowedList = entryPointsDataList.get(i).getMobileData().getContainer().getAndroid().getDisallowedActitivityList();
                 printDebugLogs(("popup allowed List size " + popupallowedList.size()));
 
                 if (popupallowedList.size() > 0 && popupdisallowedList.size() > 0) {
@@ -3599,7 +3689,7 @@ public class CustomerGlu {
                                 (Call<RewardModel> call, Response<RewardModel> response) {
                             try {
 
-                                System.out.println("API Load Campaigns code " + response.code());
+                                printDebugLogs("API Load Campaigns code " + response.code());
                                 Gson gson = new Gson();
                                 ArrayList<MetaData> responseMetaData = new ArrayList<>();
                                 String responseBody = gson.toJson(response.body());
@@ -3637,10 +3727,13 @@ public class CustomerGlu {
 
                                     } else if (response.body().success.equalsIgnoreCase("true")) {
                                         //      queue.start();
+                                        LoadCampaignETAG = response.headers().get(ETAG);
                                         ArrayList<MetaData> successMetaData = new ArrayList<>();
                                         diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_SUCCESS, CGConstants.CG_LOGGING_EVENTS.METRICS, successMetaData);
                                         //  Toast.makeText(context, "success", Toast.LENGTH_SHORT).show();
                                         hostUrl = response.body().defaultUrl;
+                                        loadCampaignResponse = response.body();
+                                        addCampaignIdToList(loadCampaignResponse);
                                         callback.onSuccess(response.body());
 
 
@@ -3660,7 +3753,7 @@ public class CustomerGlu {
                                 printErrorLogs(s);
                                 Gson gson = new Gson();
                                 String json = gson.toJson(response.body());
-                                System.out.println("CustomerGlu Catch " + json);
+                                printDebugLogs("CustomerGlu Catch " + json);
                             }
 
                             diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
@@ -3673,7 +3766,7 @@ public class CustomerGlu {
                             ArrayList<MetaData> metaData1 = new ArrayList<>();
                             metaData1.add(new MetaData("Failure ", "" + s));
                             diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_LOAD_CAMPAIGN_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData1);
-                            System.out.println("CustomerGlu LoadCampaign api call fails " + s);
+                            printDebugLogs("CustomerGlu LoadCampaign api call fails " + s);
                             diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_END, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
                             CustomerGlu.getInstance().sendCrashAnalytics(context, "Load Campaign Api Fails" + s);
                             printErrorLogs(s);
@@ -3686,7 +3779,7 @@ public class CustomerGlu {
                     // queue.start();
 
                     String s = e.toString();
-                    System.out.println("CustomerGlu LoadCampaign api catch  " + s);
+                    printDebugLogs("CustomerGlu LoadCampaign api catch  " + s);
                     CustomerGlu.getInstance().sendCrashAnalytics(context, s);
                     printErrorLogs(e.toString());
                 }
@@ -3696,13 +3789,28 @@ public class CustomerGlu {
         }
     }
 
+    private void addCampaignIdToList(RewardModel loadCampaignResponse) {
+
+        if (loadCampaignResponse != null && loadCampaignResponse.getCampaigns() != null && loadCampaignResponse.getCampaigns().size() > 0) {
+
+            for (int i = 0; i < loadCampaignResponse.getCampaigns().size(); i++) {
+                if (loadCampaignResponse.getCampaigns().get(i).getUrl() != null && loadCampaignResponse.getCampaigns().get(i).getCampaignId() != null) {
+                    if (!loadCampaignResponse.getCampaigns().get(i).getCampaignId().isEmpty()) {
+                        campaignIdList.add(loadCampaignResponse.getCampaigns().get(i).getCampaignId());
+                    }
+                }
+            }
+
+        }
+
+    }
+
     /**
      * Used to show list of campaign with filter
      */
 
     @Deprecated
-    public void retrieveDataByFilter(Context
-                                             context, Map<String, Object> params, RewardInterface callback) {
+    public void retrieveDataByFilter(Context context, Map<String, Object> params, RewardInterface callback) {
         if (!sdk_disable) {
 
             try {
@@ -3787,6 +3895,17 @@ public class CustomerGlu {
         }
     }
 
+
+    public void allowAnonymousRegistration(boolean value) {
+        allowAnonymousRegistration = value;
+    }
+
+
+    public void openWalletAsFallback(boolean value) {
+        allowOpenWallet = value;
+    }
+
+
     /**
      * Used to open wallet
      */
@@ -3799,16 +3918,11 @@ public class CustomerGlu {
                     try {
                         ArrayList<MetaData> metaData = new ArrayList<>();
                         diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_OPEN_WALLET_CALLED, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-
+                        NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
                         if (isPrecachingEnable) {
                             enablePrecaching(context);
                         }
-
-                        Intent web = new Intent(context, OpenCustomerGluWeb.class);
-                        web.putExtra("campaign_id", "");
-                        web.putExtra("fromWallet", "true");
-                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(web);
+                        loadCGCampaign(context, CG_OPEN_WALLET, nudgeConfiguration);
 
 
                     } catch (Exception e) {
@@ -3828,10 +3942,6 @@ public class CustomerGlu {
     }
 
 
-    public void allowAnonymousRegistration(boolean value) {
-        allowAnonymousRegistration = value;
-    }
-
     public void openWallet(Context context, boolean closeOnDeepLink) {
         if (!sdk_disable) {
 
@@ -3843,18 +3953,17 @@ public class CustomerGlu {
                         ArrayList<MetaData> metaData = new ArrayList<>();
                         metaData.add(new MetaData("closeOnDeepLink - ", "" + closeOnDeepLink));
                         diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_OPEN_WALLET_CALLED, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
+
+                        NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+
                         if (isPrecachingEnable) {
                             enablePrecaching(context);
                         }
-                        if (closeOnDeepLink) {
-                            isClosed = "true";
-                        }
-                        Intent web = new Intent(context, OpenCustomerGluWeb.class);
-                        web.putExtra("campaign_id", "");
-                        web.putExtra("fromWallet", "true");
-                        web.putExtra("closeOnDeepLink", isClosed);
-                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(web);
+                        nudgeConfiguration.setCloseOnDeepLink(closeOnDeepLink);
+
+                        loadCGCampaign(context, CG_OPEN_WALLET, nudgeConfiguration);
+
+//
 
                     } catch (Exception e) {
                         String s = e.toString();
@@ -3887,7 +3996,7 @@ public class CustomerGlu {
                         if (isPrecachingEnable) {
                             enablePrecaching(context);
                         }
-                        loadCGCampaign(context, "CG-OPEN-WALLET", nudgeConfiguration);
+                        loadCGCampaign(context, CG_OPEN_WALLET, nudgeConfiguration);
 
                     } catch (Exception e) {
                         String s = e.toString();
@@ -3921,99 +4030,132 @@ public class CustomerGlu {
     private void loadCGCampaign(Context context, String campaign_id, NudgeConfiguration
             nudgeConfiguration) {
         final boolean[] isThere = {false};
-        if (campaign_id.equalsIgnoreCase("CG-OPEN-WALLET")) {
+        if (campaign_id != null) {
 
-            CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
-                @Override
-                public void onSuccess(RewardModel rewardModel) {
-                    String default_url = rewardModel.defaultUrl;
-                    displayCGNudge(context, default_url, nudgeConfiguration);
-                }
+            if (campaign_id.equalsIgnoreCase(CG_OPEN_WALLET)) {
 
-                @Override
-                public void onFailure(String message) {
-                    String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
-                    displayCGNudge(context, url, nudgeConfiguration);
-
-                }
-            });
-        } else if (campaign_id.equalsIgnoreCase("")) {
-
-            CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
-                @Override
-                public void onSuccess(RewardModel rewardModel) {
-                    String default_url = rewardModel.defaultUrl;
-                    sendInvalidCampaignIdCallback(context, campaign_id);
-                    displayCGNudge(context, default_url, nudgeConfiguration);
-                }
-
-                @Override
-                public void onFailure(String message) {
-                    String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
-                    displayCGNudge(context, url, nudgeConfiguration);
-
-                }
-            });
-        } else {
-
-            CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
-                @Override
-                public void onSuccess(RewardModel rewardModel) {
-                    isThere[0] = false;
-                    Gson gson = new Gson();
-                    String json = gson.toJson(rewardModel);
-
-
-                    if (rewardModel.getCampaigns().size() <= 0) {
-
-                        String default_url = rewardModel.defaultUrl;
-                        displayCGNudge(context, default_url, nudgeConfiguration);
-                        // Toast.makeText(getApplicationContext(), "Invalid CampaignId", Toast.LENGTH_SHORT).show();
-                    } else {
-                        String json1 = gson.toJson(rewardModel);
-
-                        for (int i = 0; i < rewardModel.getCampaigns().size(); i++) {
-                            System.out.println(i);
-                            String tag = "";
-
-                            if (rewardModel.getCampaigns().get(i).getBanner() != null && rewardModel.getCampaigns().get(i).getBanner().getTag() != null) {
-                                tag = rewardModel.getCampaigns().get(i).getBanner().getTag();
-                            }
-
-
-                            String id = rewardModel.getCampaigns().get(i).getCampaignId();
-
-
-                            if (campaign_id.equalsIgnoreCase(id) || campaign_id.equalsIgnoreCase(tag)) {
-                                //   System.out.println(tag);
-                                String url = rewardModel.getCampaigns().get(i).getUrl();
-                                //   System.out.println(url);
-                                //     Toast.makeText(OpenCustomerGluWeb.this, url, Toast.LENGTH_SHORT).show();
-                                isThere[0] = true;
-
-                                displayCGNudge(context, url, nudgeConfiguration);
-                                break;
-                            }
-
-                        }
-                        if (!isThere[0]) {
-                            sendInvalidCampaignIdCallback(context, campaign_id);
+                if (loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
+                    displayCGNudge(context, loadCampaignResponse.defaultUrl, nudgeConfiguration);
+                } else {
+                    CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
+                        @Override
+                        public void onSuccess(RewardModel rewardModel) {
                             String default_url = rewardModel.defaultUrl;
                             displayCGNudge(context, default_url, nudgeConfiguration);
                         }
 
+                        @Override
+                        public void onFailure(String message) {
+                            displayCGNudge(context, ERROR_URL, nudgeConfiguration);
+
+                        }
+                    });
+                }
+
+            } else if (campaign_id.equalsIgnoreCase("")) {
+                checkOpenWalletOrNot(context, campaign_id, nudgeConfiguration);
+            } else {
+                if (loadCampaignResponse != null && loadCampaignResponse.getCampaigns() != null && isMqttEnabled && isMqttConnected) {
+                    Campaigns campaigns = new Campaigns(campaign_id);
+                    if (loadCampaignResponse.getCampaigns().size() > 0 && loadCampaignResponse.getCampaigns().contains(campaigns)) {
+                        String url = loadCampaignResponse.campaigns.get(loadCampaignResponse.getCampaigns().lastIndexOf(campaigns)).getUrl();
+                        displayCGNudge(context, url, nudgeConfiguration);
+                    } else {
+                        checkOpenWalletOrNot(context, campaign_id, nudgeConfiguration);
+                    }
+                } else {
+                    CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
+                        @Override
+                        public void onSuccess(RewardModel rewardModel) {
+                            isThere[0] = false;
+                            Gson gson = new Gson();
+                            String json = gson.toJson(rewardModel);
+
+
+                            if (rewardModel.getCampaigns() != null && rewardModel.getCampaigns().size() <= 0) {
+
+                                String default_url = rewardModel.defaultUrl;
+                                if (allowOpenWallet) {
+
+                                    displayCGNudge(context, default_url, nudgeConfiguration);
+                                }
+                                sendInvalidCampaignIdCallback(context, campaign_id);
+                                // Toast.makeText(getApplicationContext(), "Invalid CampaignId", Toast.LENGTH_SHORT).show();
+                            } else {
+                                String json1 = gson.toJson(rewardModel);
+
+                                for (int i = 0; i < rewardModel.getCampaigns().size(); i++) {
+                                    System.out.println(i);
+                                    String tag = "";
+
+                                    if (rewardModel.getCampaigns().get(i).getBanner() != null && rewardModel.getCampaigns().get(i).getBanner().getTag() != null) {
+                                        tag = rewardModel.getCampaigns().get(i).getBanner().getTag();
+                                    }
+
+
+                                    String id = rewardModel.getCampaigns().get(i).getCampaignId();
+
+
+                                    if (campaign_id.equalsIgnoreCase(id) || campaign_id.equalsIgnoreCase(tag)) {
+                                        //   System.out.println(tag);
+                                        String url = rewardModel.getCampaigns().get(i).getUrl();
+                                        //   System.out.println(url);
+                                        //     Toast.makeText(OpenCustomerGluWeb.this, url, Toast.LENGTH_SHORT).show();
+                                        isThere[0] = true;
+
+                                        displayCGNudge(context, url, nudgeConfiguration);
+                                        break;
+                                    }
+
+                                }
+                                if (!isThere[0]) {
+                                    sendInvalidCampaignIdCallback(context, campaign_id);
+                                    String default_url = rewardModel.defaultUrl;
+                                    if (allowOpenWallet) {
+                                        displayCGNudge(context, default_url, nudgeConfiguration);
+                                    }
+                                }
+
+                            }
+
+
+                        }
+
+                        @Override
+                        public void onFailure(String message) {
+
+                            String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
+                            displayCGNudge(context, url, nudgeConfiguration);
+                        }
+                    });
+                }
+            }
+        } else {
+            sendInvalidCampaignIdCallback(context, null);
+        }
+
+    }
+
+    private void checkOpenWalletOrNot(Context context, String campaign_id, NudgeConfiguration nudgeConfiguration) {
+        sendInvalidCampaignIdCallback(context, campaign_id);
+        if (allowOpenWallet && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
+            displayCGNudge(context, loadCampaignResponse.defaultUrl, nudgeConfiguration);
+        } else {
+            if (allowOpenWallet) {
+                CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
+                    @Override
+                    public void onSuccess(RewardModel rewardModel) {
+                        String default_url = rewardModel.defaultUrl;
+                        displayCGNudge(context, default_url, nudgeConfiguration);
                     }
 
+                    @Override
+                    public void onFailure(String message) {
+                        displayCGNudge(context, ERROR_URL, nudgeConfiguration);
 
-                }
-
-                @Override
-                public void onFailure(String message) {
-
-                    String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
-                    displayCGNudge(context, url, nudgeConfiguration);
-                }
-            });
+                    }
+                });
+            }
         }
     }
 
@@ -4090,14 +4232,18 @@ public class CustomerGlu {
                         ArrayList<MetaData> metaData = new ArrayList<>();
                         metaData.add(new MetaData("campaignId - ", "" + id));
                         diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_BY_ID_CALLED, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
+
+                        NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+
                         if (isPrecachingEnable) {
                             enablePrecaching(context);
                         }
+                        loadCGCampaign(context, id, nudgeConfiguration);
 
-                        Intent web = new Intent(context, OpenCustomerGluWeb.class);
-                        web.putExtra("campaign_id", id);
-                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(web);
+//                        Intent web = new Intent(context, OpenCustomerGluWeb.class);
+//                        web.putExtra("campaign_id", id);
+//                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
+//                        context.startActivity(web);
 
                     } catch (Exception e) {
                         printErrorLogs(e.toString());
@@ -4125,21 +4271,17 @@ public class CustomerGlu {
                         metaData.add(new MetaData("campaignId - ", "" + id));
                         metaData.add(new MetaData("closeOnDeepLink - ", "" + closeOnDeepLink));
                         diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_LOAD_CAMPAIGN_BY_ID_CALLED, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
-                        String isClosed = "false";
+                        NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
 
                         if (isPrecachingEnable) {
                             enablePrecaching(context);
                         }
                         if (closeOnDeepLink) {
-                            isClosed = "true";
+                            nudgeConfiguration.setCloseOnDeepLink(true);
                         }
 
+                        loadCGCampaign(context, id, nudgeConfiguration);
 
-                        Intent web = new Intent(context, OpenCustomerGluWeb.class);
-                        web.putExtra("campaign_id", id);
-                        web.putExtra("closeOnDeepLink", isClosed);
-                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(web);
 
                     } catch (Exception e) {
                         printErrorLogs(e.toString());
@@ -4188,6 +4330,12 @@ public class CustomerGlu {
                 printErrorLogs("No Internet Connection");
             }
         }
+    }
+
+    public void testIntegration() {
+        Intent intent = new Intent(globalContext, ClientTestingPage.class);
+        intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        globalContext.startActivity(intent);
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
@@ -5578,8 +5726,9 @@ public class CustomerGlu {
         appSessionId = UUID.randomUUID().toString();
         ContextWrapper contextWrapper = new ContextWrapper(context);
         screenList = new ArrayList<>();
-
-        //  entryPointId = new ArrayList<>();
+        EntryPointETAG = "";
+        LoadCampaignETAG = "";
+        campaignIdList = new ArrayList<>();
         File zip = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
         File file = new File(zip, "CustomerGlu");
         recursiveDelete(file);

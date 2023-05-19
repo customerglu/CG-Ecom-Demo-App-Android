@@ -28,6 +28,7 @@ public class ProgressLottieView extends RelativeLayout {
     private LottieAnimationView animationView;
     private ProgressBar progressBar;
     private int progressBarColor;
+    private ImageView.ScaleType scaleType = ImageView.ScaleType.FIT_CENTER;
 
     public ProgressLottieView(Context context) {
         super(context);
@@ -49,10 +50,14 @@ public class ProgressLottieView extends RelativeLayout {
         setupView();
     }
 
+    public void setScaleType(ImageView.ScaleType scaleType) {
+        this.scaleType = scaleType;
+    }
+
     public void setupView() {
         View layout = LayoutInflater.from(getContext()).inflate(R.layout.layout_lottie_progressbar_view, this, true);
         animationView = layout.findViewById(R.id.lottie_progress_view);
-        animationView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        animationView.setScaleType(scaleType);
         progressBar = findViewById(R.id.progress_bar);
         try {
             progressBarColor = Color.parseColor(CustomerGlu.configure_loader_color);
@@ -80,7 +85,7 @@ public class ProgressLottieView extends RelativeLayout {
 
             @Override
             public void onAnimationRepeat(Animator animator) {
-                printDebugLogs("onAnimationRepeat");
+                //    printDebugLogs("onAnimationRepeat");
 
             }
         });

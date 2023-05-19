@@ -1,5 +1,7 @@
 package com.customerglu.sdk.Utils;
 
+import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
+
 import android.os.Handler;
 
 import java.util.Random;
@@ -45,11 +47,11 @@ class CGRetryableCallback<T> implements Callback<T> {
     public void onFinalResponse(Call<T> call, Response<T> response) {
 
 
-        System.out.println("onFinalResponse");
+        printDebugLogs("onFinalResponse");
     }
 
     public void onFinalFailure(Call<T> call, Throwable t) {
-        System.out.println("onFinalResponse");
+        printDebugLogs("onFinalResponse");
     }
 
     private void retry() {

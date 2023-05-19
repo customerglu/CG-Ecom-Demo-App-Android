@@ -2,6 +2,7 @@ package com.customerglu.sdk.Web;
 
 import static com.customerglu.sdk.CustomerGlu.diagnosticsHelper;
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_REGISTER_RESPONSE;
+import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 import static com.customerglu.sdk.Utils.Comman.validateURL;
@@ -15,7 +16,6 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -64,7 +64,7 @@ public class OpenCustomerGluWeb extends BaseActivity {
             public void onReceive(Context context, Intent intent) {
                 // Extract data included in the Intent
 
-                System.out.println("==================Recieved============");
+                printDebugLogs("==================Recieved============");
                 if (intent.getAction().equalsIgnoreCase("HIDE_LOADER")) {
                     stopLottieProgressView();
                     if (web != null) {
@@ -170,7 +170,7 @@ public class OpenCustomerGluWeb extends BaseActivity {
         try {
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
-                System.out.println(val);
+                printDebugLogs(val);
                 closeOnDeepLink = true;
             } else {
                 closeOnDeepLink = false;
@@ -274,8 +274,7 @@ public class OpenCustomerGluWeb extends BaseActivity {
                     } catch (MalformedURLException e) {
                         e.printStackTrace();
                     }
-                    web.loadUrl(errorUrl + darkMode);
-                    Log.e("CG URL", errorUrl + darkMode);
+                    web.loadUrl(ERROR_URL);
                     web.setVisibility(View.VISIBLE);
                     cancelTimer();
 
@@ -314,7 +313,7 @@ public class OpenCustomerGluWeb extends BaseActivity {
                         String json1 = gson.toJson(rewardModel);
 
                         for (int i = 0; i < rewardModel.getCampaigns().size(); i++) {
-                            System.out.println(i);
+                            printDebugLogs("" + i);
                             String tag = "";
 
                             if (rewardModel.getCampaigns().get(i).getBanner() != null && rewardModel.getCampaigns().get(i).getBanner().getTag() != null) {
@@ -421,7 +420,7 @@ public class OpenCustomerGluWeb extends BaseActivity {
         pg.getIndeterminateDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
         //  web = CustomerGlu.webView;
         printErrorLogs("WebEvents CGWebClient");
-
+        web.setWebContentsDebuggingEnabled(true);
         web.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(true);

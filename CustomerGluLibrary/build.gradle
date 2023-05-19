@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
+//    id 'org.sonarqube'
 }
 
 android {
@@ -76,7 +77,7 @@ afterEvaluate {
 
                 groupId = 'com.customerglu'
                 artifactId = 'sdk'
-                version = '2.3.4'
+                version = '2.3.6'
             }
         }
     }

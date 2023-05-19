@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.customerglu.sdk.Adapters.RewardsAdapter;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Interface.RewardInterface;
+import com.customerglu.sdk.Modal.Campaigns;
 import com.customerglu.sdk.Modal.RewardModel;
 import com.customerglu.sdk.R;
 
@@ -32,7 +33,7 @@ public class RewardScreen extends Activity {
     String type = "", status = "";
     ProgressBar pg;
     TextView label;
-    public List<RewardModel.Campaigns> rewardlist = new ArrayList<>();
+    public List<Campaigns> rewardlist = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

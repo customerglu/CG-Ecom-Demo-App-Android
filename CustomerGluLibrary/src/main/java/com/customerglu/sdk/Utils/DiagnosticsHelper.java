@@ -126,7 +126,7 @@ public class DiagnosticsHelper {
             cgLoggingEventModel.setSdk_type("cg-sdk-android");
             cgLoggingEventModel.setAnalytics_version("4.0.0");
             String body = gson.toJson(cgLoggingEventModel);
-            printDebugLogs(event_name + body);
+            //   printDebugLogs(event_name + body);
             if (!write_key.equalsIgnoreCase("")) {
                 CGAPIHelper.enqueueWithRetry(Comman.getApiToken().sendDiagnosticsEvent(write_key, cgLoggingEventModel), new Callback<RegisterModal>() {
                     @Override

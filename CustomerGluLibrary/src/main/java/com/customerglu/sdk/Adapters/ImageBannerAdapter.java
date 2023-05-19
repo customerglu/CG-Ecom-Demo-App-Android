@@ -1,15 +1,19 @@
 package com.customerglu.sdk.Adapters;
 
 import static android.view.View.GONE;
+import static com.customerglu.sdk.Utils.CGConstants.CG_OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
+import static com.customerglu.sdk.Utils.CGConstants.OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,9 +26,13 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Modal.EntryPointsData;
 import com.customerglu.sdk.Modal.MobileData;
@@ -32,6 +40,7 @@ import com.customerglu.sdk.Modal.NudgeConfiguration;
 import com.customerglu.sdk.R;
 import com.customerglu.sdk.Utils.Comman;
 import com.customerglu.sdk.Utils.Prefs;
+import com.customerglu.sdk.cgRxBus.event.CGBannerDismissShimmerEvent;
 
 import org.json.JSONObject;
 
@@ -50,7 +59,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
     private final EntryPointsData entryPointsModel;
     private double relativeHeight = 0;
     private double absoluteHeight = 0;
-    boolean isClosed = false;
+    boolean isClosed = true;
 
     public ImageBannerAdapter(Context mContext, List<MobileData.Content> contentList, EntryPointsData entryPointsData, String opacity) {
         this.mContext = mContext;
@@ -99,12 +108,36 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                     holder.webView.setVisibility(GONE);
                     holder.mImage.setVisibility(View.VISIBLE);
                     if (bannerImageUrl.contains(".gif") || bannerImageUrl.contains(".Gif")) {
+
                         Glide.with(mContext)
                                 .asGif()
                                 .load(bannerImageUrl)
-                                .into(holder.mImage);
+                                .into(new CustomTarget<GifDrawable>() {
+                                    @Override
+                                    public void onResourceReady(@NonNull GifDrawable resource, @Nullable Transition<? super GifDrawable> transition) {
+                                        holder.mImage.setImageDrawable(resource);
+                                        CustomerGlu.cgrxBus.postEvent(new CGBannerDismissShimmerEvent(true));
+                                    }
+
+                                    @Override
+                                    public void onLoadCleared(@Nullable Drawable placeholder) {
+
+                                    }
+                                });
                     } else {
-                        Glide.with(mContext).asBitmap().load(bannerImageUrl).into(holder.mImage);
+
+
+                        Glide.with(mContext).asBitmap().load(bannerImageUrl).into(new CustomTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                CustomerGlu.cgrxBus.postEvent(new CGBannerDismissShimmerEvent(true));
+                                holder.mImage.setImageBitmap(resource);
+                            }
+
+                            @Override
+                            public void onLoadCleared(@Nullable Drawable placeholder) {
+                            }
+                        });
                     }
                     boolean isUrlValiadte = false;
 
@@ -286,7 +319,15 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                         }
 
                         if (contentList.get(position).getAction() != null) {
+                            NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
+                            nudgeConfiguration.setRelativeHeight(relativeHeight);
+                            nudgeConfiguration.setAbsoluteHeight(absoluteHeight);
+                            nudgeConfiguration.setLayout(data.getOpenLayout());
+                            nudgeConfiguration.setCloseOnDeepLink(isClosed);
+                            nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
+                            nudgeConfiguration.setHyperlink(true);
                             switch (contentList.get(position).getAction().getType()) {
+
                                 case OPEN_DEEPLINK:
                                     if (contentList.get(position).getAction().getUrl() != null && !contentList.get(position).getAction().getUrl().isEmpty()) {
                                         try {
@@ -309,24 +350,18 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                                     }
                                     break;
                                 case OPEN_WEBLINK:
-                                    NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
-                                    nudgeConfiguration.setRelativeHeight(relativeHeight);
-                                    nudgeConfiguration.setAbsoluteHeight(absoluteHeight);
-                                    nudgeConfiguration.setLayout(data.getOpenLayout());
-                                    nudgeConfiguration.setCloseOnDeepLink(isClosed);
-                                    nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
-                                    nudgeConfiguration.setHyperlink(true);
                                     if (contentList.get(position).getAction().getUrl() != null && !contentList.get(position).getAction().getUrl().isEmpty()) {
                                         CustomerGlu.getInstance().displayCGNudge(mContext, contentList.get(position).getAction().getUrl(), nudgeConfiguration);
                                     }
                                     break;
-
+                                case OPEN_WALLET:
+                                    CustomerGlu.getInstance().loadPopUpBanner(mContext, CG_OPEN_WALLET, data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);
+                                    break;
                                 default:
                                     CustomerGlu.getInstance().loadPopUpBanner(mContext, data.getCampaignId(), data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);
                             }
                         } else {
                             CustomerGlu.getInstance().loadPopUpBanner(mContext, data.getCampaignId(), data.getOpenLayout(), opacity, absoluteHeight, relativeHeight, isClosed);
-
                         }
 
                     }

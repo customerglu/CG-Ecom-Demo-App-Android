@@ -18,7 +18,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcelable;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 
 import androidx.core.app.ShareCompat;
@@ -86,7 +85,7 @@ public class EmbeddedViewJavaScriptInterface {
 
             }
             if (event.equalsIgnoreCase("HIDE_LOADER")) {
-                Log.e("CG", "HIDE_LOADER");
+                printDebugLogs("HIDE_LOADER");
                 Intent intent = new Intent("HIDE_LOADER");
 //                intent.putExtra("data", me.toString());
                 activity.sendBroadcast(intent);

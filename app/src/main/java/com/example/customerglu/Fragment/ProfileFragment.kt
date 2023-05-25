@@ -63,7 +63,7 @@ class ProfileFragment : Fragment() {
     private val PICK_IMAGE_REQUEST = 71
     private var filePath: Uri? = null
     private lateinit var loadingDialog: loadingDialog
-
+    lateinit var profile_banner:RelativeLayout
     lateinit var uploadImage_profileFrag:Button
     lateinit var profileName_profileFrag:TextView
     lateinit var profileEmail_profileFrag:TextView
@@ -110,6 +110,7 @@ class ProfileFragment : Fragment() {
         linearLayout4 = view.findViewById(R.id.linearLayout4)
         rewards = view.findViewById(R.id.rewards);
         language_lyt = view.findViewById(R.id.language_lyt);
+        profile_banner = view.findViewById(R.id.profile_banner)
         val shippingAddressCard_ProfilePage = view.findViewById<CardView>(R.id.shippingAddressCard_ProfilePage)
         val paymentMethod_ProfilePage = view.findViewById<CardView>(R.id.paymentMethod_ProfilePage)
         val cardsNumber_profileFrag:TextView = view.findViewById(R.id.cardsNumber_profileFrag)
@@ -211,6 +212,7 @@ class ProfileFragment : Fragment() {
         linearLayout3.visibility = View.GONE
         linearLayout4.visibility = View.GONE
         animationView.visibility = View.VISIBLE
+        profile_banner.visibility = View.GONE
     }
     private fun showLayout(){
         animationView.pauseAnimation()
@@ -218,6 +220,7 @@ class ProfileFragment : Fragment() {
         linearLayout2.visibility = View.VISIBLE
         linearLayout3.visibility = View.VISIBLE
         linearLayout4.visibility = View.VISIBLE
+        profile_banner.visibility = View.VISIBLE
     }
 
 

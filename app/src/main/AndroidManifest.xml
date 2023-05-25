@@ -48,7 +48,9 @@
             </intent-filter>
         </activity>
         <activity android:name=".EmailVerifyActivity" />
-        <activity android:name=".HomeActivity" android:exported="true">
+        <activity android:name=".HomeActivity"
+            android:launchMode="singleInstance"
+            android:exported="true">
             <intent-filter
                 android:autoVerify="true"
                 tools:targetApi="m">

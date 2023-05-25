@@ -394,7 +394,7 @@ public class ClientTestingPage extends Activity {
                     dialog.dismiss();
                     try {
                         JSONObject dataObject = new JSONObject();
-                        dataObject.put("deepLink", CustomerGlu.clientDeeplinkUrl);
+                        dataObject.put("deepLink", CustomerGlu.callbackConfigurationUrl);
 
                         Intent intent = new Intent("CUSTOMERGLU_DEEPLINK_EVENT");
                         intent.putExtra("data", dataObject.toString());

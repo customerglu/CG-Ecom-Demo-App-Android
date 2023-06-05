@@ -32,6 +32,7 @@ import com.example.customerglu.Adapter.SaleProductAdapter
 import com.example.customerglu.Model.Product
 import com.example.customerglu.QRCodeScanner
 import com.example.customerglu.R
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.Utils.Prefs
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -186,7 +187,8 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        customerGlu.showEntryPoint(activity,"Home")
+        CustomerGluManager.setClassNameForCG(requireActivity(),"Home")
+
 
     }
     private val requestPermissionLauncher =

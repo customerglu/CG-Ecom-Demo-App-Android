@@ -3,7 +3,6 @@ package com.customerglu.sdk.mqtt;
 import static com.customerglu.sdk.CustomerGlu.isMqttConnected;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_MQTT_CONNECTED;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_MQTT_INITIALIZING;
-import static com.customerglu.sdk.Utils.CGConstants.DEV_MQTT_SERVER_HOST;
 import static com.customerglu.sdk.Utils.CGConstants.MQTT_SERVER_HOST;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;

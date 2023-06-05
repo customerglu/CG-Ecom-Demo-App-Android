@@ -89,7 +89,7 @@ object CustomerGluManager {
 
                         if (intent.action.equals("CG_INVALID_CAMPAIGN_ID", ignoreCase = true)) {
                             val data = intent.getStringExtra("data")
-                            //   Log.e("WebAnalytics INVALID", data);
+                            Log.e("WebAnalytics INVALID", data.toString());
                         }
 
                             // Add the logic to redirect to appropriate page

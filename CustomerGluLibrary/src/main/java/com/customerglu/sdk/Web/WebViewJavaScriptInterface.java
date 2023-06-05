@@ -1,6 +1,7 @@
 package com.customerglu.sdk.Web;
 
 
+import static com.customerglu.sdk.CustomerGlu.doLoadCampaignAndEntryPointCall;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_CTA_CALLBACK;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
@@ -180,7 +181,13 @@ public class WebViewJavaScriptInterface {
             if (event.equalsIgnoreCase("ANALYTICS")) {
 
                 JSONObject me = data.getJSONObject("data");
+                if (me.has("event_name")) {
+                    String event_name = me.getString("event_name");
+                    if (event_name.equalsIgnoreCase("GAME_PLAYED")) {
+                        doLoadCampaignAndEntryPointCall();
+                    }
 
+                }
                 if (CustomerGlu.isAnalyticsEventEnabled) {
                     Intent intent = new Intent("CUSTOMERGLU_ANALYTICS_EVENT");
                     intent.putExtra("data", me.toString());

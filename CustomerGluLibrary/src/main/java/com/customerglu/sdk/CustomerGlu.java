@@ -64,6 +64,7 @@ import static com.customerglu.sdk.Utils.CGConstants.EMBED_DARK_LOTTIE_FILE_NAME;
 import static com.customerglu.sdk.Utils.CGConstants.EMBED_LIGHT_LOTTIE_FILE_NAME;
 import static com.customerglu.sdk.Utils.CGConstants.ENCRYPTED_CUSTOMERGLU_TOKEN;
 import static com.customerglu.sdk.Utils.CGConstants.ENCRYPTED_CUSTOMERGLU_USER_ID;
+import static com.customerglu.sdk.Utils.CGConstants.ENTRYPOINT;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_DISMISS;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
@@ -285,6 +286,9 @@ public class CustomerGlu {
 
     private static String LoadCampaignETAG = "";
     private static String EntryPointETAG = "";
+    private static boolean MQTT_STATE_SYNC = false;
+    private static boolean MQTT_NUDGES = false;
+    private static boolean MQTT_ENTRY_POINTS = false;
 
     private CustomerGlu() {
         s = "CustomerGlu Singleton class";
@@ -357,7 +361,6 @@ public class CustomerGlu {
         enableEntryPoints(activity, true);
         showEntryPoint(activity);
     }
-
 
     private void settingInitializeConfiguration(Context globalContext, String writeKey) {
         if (isOnline(globalContext)) {
@@ -571,6 +574,17 @@ public class CustomerGlu {
                                         isLoginWithUserId = true;
                                     }
 
+                                    if (mobile.getMqttEnabledComponents() != null) {
+                                        if (mobile.getMqttEnabledComponents().contains(CGConstants.STATE_SYNC)) {
+                                            MQTT_STATE_SYNC = true;
+                                        }
+                                        if (mobile.getMqttEnabledComponents().contains(CGConstants.NUDGES)) {
+                                            MQTT_NUDGES = true;
+                                        }
+                                        if (mobile.getMqttEnabledComponents().contains(ENTRYPOINT)) {
+                                            MQTT_ENTRY_POINTS = true;
+                                        }
+                                    }
                                     String myUserData = Prefs.getEncKey(globalContext, CG_USER_DATA);
 
                                     if (!myUserData.isEmpty()) {
@@ -688,15 +702,24 @@ public class CustomerGlu {
                     //  System.out.println("RxBus data" + data);
                     switch (data.getType()) {
                         case CGConstants.ENTRYPOINT:
+                            if (isMqttEnabled && MQTT_STATE_SYNC || MQTT_ENTRY_POINTS) {
+                                doLoadCampaignAndEntryPointCall();
+                            }
+                            break;
                         case CGConstants.USER_SEGMENT_UPDATED:
                         case CGConstants.CAMPAIGN_STATE_UPDATED:
-                            doLoadCampaignAndEntryPointCall(data);
+                            if (isMqttEnabled && MQTT_STATE_SYNC) {
+                                doLoadCampaignAndEntryPointCall();
+                            }
                             break;
                         case CGConstants.SDK_CONFIG_UPDATED:
-                            CustomerGlu.getInstance().initializeSdk(globalContext);
+                                CustomerGlu.getInstance().initializeSdk(globalContext);
+
                             break;
                         case CGConstants.OPEN_CLIENT_TESTING_PAGE:
-                            CustomerGlu.getInstance().testIntegration();
+                            if (isMqttEnabled) {
+                                CustomerGlu.getInstance().testIntegration();
+                            }
                             break;
 
                     }
@@ -733,17 +756,14 @@ public class CustomerGlu {
         mqttClientHelper.setupMQTTClient(userId, token, clientId, identifier);
     }
 
-    private static void doLoadCampaignAndEntryPointCall(MqttDataModel data) {
+    public static void doLoadCampaignAndEntryPointCall() {
         //    Toast.makeText(globalContext, data.getType(), Toast.LENGTH_SHORT).show();
 
         CustomerGlu.getInstance().retrieveData(globalContext, new RewardInterface() {
             @Override
             public void onSuccess(RewardModel rewardModel) {
-                String entryPointId = "";
-                if (data.getId() != null) {
-                    entryPointId = data.getId();
-                }
-                updateEntryPoints(entryPointId);
+
+                updateEntryPoints();
             }
 
             @Override
@@ -1288,9 +1308,13 @@ public class CustomerGlu {
                 parent.removeView(myView);
             }
         }
+            EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
 
-
-        entryPointManager = new EntryPointManager(activity, currentScreenName);
+//        if (entryPointManager != null) {
+//            entryPointManager.setScreenName(currentScreenName);
+//        } else {
+//            entryPointManager = new EntryPointManager(activity, currentScreenName);
+//        }
     }
 
     /**
@@ -2219,7 +2243,7 @@ public class CustomerGlu {
         }
     }
 
-    private static void updateEntryPoints(String entryPointId) {
+    private static void updateEntryPoints() {
 
         String token = Prefs.getEncKey(globalContext, ENCRYPTED_CUSTOMERGLU_TOKEN);
         if (isOnline(globalContext) && !sdk_disable && isBannerEntryPointsEnabled && !token.equalsIgnoreCase("")) {
@@ -2228,106 +2252,55 @@ public class CustomerGlu {
             diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_UPDATE_CALLED, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData);
             diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_GET_ENTRY_POINT_START, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
             String reqToken = "Bearer " + token;
-            if (entryPointId != null && !entryPointId.isEmpty()) {
-                CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getEntryPointsDataById(reqToken, entryPointId), new Callback<EntryPointsModel>() {
-                    @Override
-                    public void onResponse(Call<EntryPointsModel> call, Response<EntryPointsModel> response) {
-                        ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                        Gson gson = new Gson();
-                        String responseBody = gson.toJson(response.body());
-                        responseMetaData.add(new MetaData("EntryPoint API response code", "" + response.code()));
-                        responseMetaData.add(new MetaData("EntryPoint API response body - ", responseBody));
-                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                        if (response.code() == 200 && response.body() != null) {
-                            if (response.body().getSuccess() != null && response.body().getSuccess()) {
+            CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getEntryPointsData(reqToken), new Callback<EntryPointsModel>() {
 
-                                if (response.body().getEntryPointsData() != null) {
-                                    boolean updateUI = true;
-                                    if (response.headers().get(ETAG) != null) {
-                                        String eTag = response.headers().get(ETAG);
-                                        if (eTag.equalsIgnoreCase(EntryPointETAG)) {
-                                            updateUI = false;
-                                        } else {
-                                            EntryPointETAG = response.headers().get(ETAG);
-                                        }
+                @Override
+                public void onResponse(Call<EntryPointsModel> call, Response<EntryPointsModel> response) {
+                    ArrayList<MetaData> responseMetaData = new ArrayList<>();
+                    Gson gson = new Gson();
+                    String responseBody = gson.toJson(response.body());
+                    responseMetaData.add(new MetaData("EntryPoint API response code", "" + response.code()));
+                    responseMetaData.add(new MetaData("EntryPoint API response body - ", responseBody));
+                    diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
+                    if (response.code() == 200 && response.body() != null) {
+                        if (response.body().getSuccess() != null && response.body().getSuccess()) {
+
+                            if (response.body().getEntryPointsData() != null) {
+                                boolean updateUI = true;
+                                if (response.headers().get(ETAG) != null) {
+                                    String eTag = response.headers().get(ETAG);
+                                    if (eTag.equalsIgnoreCase(EntryPointETAG)) {
+                                        updateUI = false;
+                                    } else {
+                                        EntryPointETAG = response.headers().get(ETAG);
                                     }
-                                    if (updateUI) {
-                                        List<EntryPointsData> newEntryPointDataList = response.body().getEntryPointsData();
-                                        if (entryPointsModel != null) {
-                                            if (entryPointsModel.getEntryPointsData() != null) {
-                                                System.out.println("Broadcast Entrypoint");
-                                                List<EntryPointsData> updatedEntryPointDataList = mergeArraysAndRemoveDuplicates(entryPointsModel.getEntryPointsData(), newEntryPointDataList);
-                                                entryPointsModel.setEntryPointsData(updatedEntryPointDataList);
-                                                Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
-                                                globalContext.sendBroadcast(intent);
-                                                getBannerHeight(globalContext, entryPointsModel);
-                                                Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
-                                                globalContext.sendBroadcast(mqttIntent);
-                                            }
+                                }
+                                if (updateUI) {
+                                    if (entryPointsModel != null) {
+                                        if (entryPointsModel.getEntryPointsData() != null) {
+                                            entryPointsModel = response.body();
+                                            System.out.println("Broadcast Entrypoint");
+                                            Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
+                                            globalContext.sendBroadcast(intent);
+                                            getBannerHeight(globalContext, entryPointsModel);
+                                            Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
+                                            globalContext.sendBroadcast(mqttIntent);
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    @Override
-                    public void onFailure(Call<EntryPointsModel> call, Throwable t) {
-                        ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                        responseMetaData.add(new MetaData("EntryPoint API onFailure ", "" + t.getMessage()));
-                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                    }
-                });
-            } else {
-                CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getEntryPointsData(reqToken), new Callback<EntryPointsModel>() {
+                @Override
+                public void onFailure(Call<EntryPointsModel> call, Throwable t) {
+                    ArrayList<MetaData> responseMetaData = new ArrayList<>();
+                    responseMetaData.add(new MetaData("EntryPoint API onFailure ", "" + t.getMessage()));
+                    diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
+                }
+            });
 
-                    @Override
-                    public void onResponse(Call<EntryPointsModel> call, Response<EntryPointsModel> response) {
-                        ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                        Gson gson = new Gson();
-                        String responseBody = gson.toJson(response.body());
-                        responseMetaData.add(new MetaData("EntryPoint API response code", "" + response.code()));
-                        responseMetaData.add(new MetaData("EntryPoint API response body - ", responseBody));
-                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                        if (response.code() == 200 && response.body() != null) {
-                            if (response.body().getSuccess() != null && response.body().getSuccess()) {
-
-                                if (response.body().getEntryPointsData() != null) {
-                                    boolean updateUI = true;
-                                    if (response.headers().get(ETAG) != null) {
-                                        String eTag = response.headers().get(ETAG);
-                                        if (eTag.equalsIgnoreCase(EntryPointETAG)) {
-                                            updateUI = false;
-                                        } else {
-                                            EntryPointETAG = response.headers().get(ETAG);
-                                        }
-                                    }
-                                    if (updateUI) {
-                                        if (entryPointsModel != null) {
-                                            if (entryPointsModel.getEntryPointsData() != null) {
-                                                entryPointsModel = response.body();
-                                                System.out.println("Broadcast Entrypoint");
-                                                Intent intent = new Intent("CUSTOMERGLU_ENTRY_POINT_DATA");
-                                                globalContext.sendBroadcast(intent);
-                                                getBannerHeight(globalContext, entryPointsModel);
-                                                Intent mqttIntent = new Intent("CG_MQTT_ENTRYPOINT_DATA_RECEIVED");
-                                                globalContext.sendBroadcast(mqttIntent);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<EntryPointsModel> call, Throwable t) {
-                        ArrayList<MetaData> responseMetaData = new ArrayList<>();
-                        responseMetaData.add(new MetaData("EntryPoint API onFailure ", "" + t.getMessage()));
-                        diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_ENTRY_POINTS_FAILURE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
-                    }
-                });
-            }
         }
     }
 
@@ -2662,7 +2635,6 @@ public class CustomerGlu {
                             for (int i = 0; i < entryPointsDataList.size(); i++) {
 
                                 campaignCountObj.put(entryPointsDataList.get(i).get_id(), 0);
-                                // campaignCountObj.put("", entry_id);
                             }
                             printDebugLogs("" + campaignCountObj.size());
                             Prefs.putEncCampaignIdObject(context, campaignCountObj);
@@ -4034,7 +4006,7 @@ public class CustomerGlu {
 
             if (campaign_id.equalsIgnoreCase(CG_OPEN_WALLET)) {
 
-                if (loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
+                if (MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
                     displayCGNudge(context, loadCampaignResponse.defaultUrl, nudgeConfiguration);
                 } else {
                     CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
@@ -4055,7 +4027,7 @@ public class CustomerGlu {
             } else if (campaign_id.equalsIgnoreCase("")) {
                 checkOpenWalletOrNot(context, campaign_id, nudgeConfiguration);
             } else {
-                if (loadCampaignResponse != null && loadCampaignResponse.getCampaigns() != null && isMqttEnabled && isMqttConnected) {
+                if (MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.getCampaigns() != null && isMqttEnabled && isMqttConnected) {
                     Campaigns campaigns = new Campaigns(campaign_id);
                     if (loadCampaignResponse.getCampaigns().size() > 0 && loadCampaignResponse.getCampaigns().contains(campaigns)) {
                         String url = loadCampaignResponse.campaigns.get(loadCampaignResponse.getCampaigns().lastIndexOf(campaigns)).getUrl();
@@ -4135,10 +4107,10 @@ public class CustomerGlu {
         }
 
     }
-
+        // Use of this method is only to check open wallet or not
     private void checkOpenWalletOrNot(Context context, String campaign_id, NudgeConfiguration nudgeConfiguration) {
         sendInvalidCampaignIdCallback(context, campaign_id);
-        if (allowOpenWallet && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
+        if (allowOpenWallet && MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
             displayCGNudge(context, loadCampaignResponse.defaultUrl, nudgeConfiguration);
         } else {
             if (allowOpenWallet) {

@@ -59,6 +59,7 @@ public class BottomSheet extends BaseActivity {
     RelativeLayout bottom_sheet;
     String darkMode = "darkMode=false";
     ProgressLottieView progressLottieView;
+    BottomSheetDialog dialog;
 
     @Override
     public void onAttachedToWindow() {
@@ -231,6 +232,10 @@ public class BottomSheet extends BaseActivity {
         CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, finalData);
         super.onDestroy();
 
+        if (dialog != null && dialog.isShowing()) {
+            dialog.dismiss();
+        }
+
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -267,7 +272,7 @@ public class BottomSheet extends BaseActivity {
 
         backgroundOpcatity = 255 * opacity;
         main.getBackground().setAlpha((int) backgroundOpcatity);
-        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog = new BottomSheetDialog(this);
         dialog.setContentView(view);
 //        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) scree));
 //        layout.setLayoutParams(layoutParams);

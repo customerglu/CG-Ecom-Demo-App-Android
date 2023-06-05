@@ -21,3 +21,7 @@
 #-renamesourcefileattribute SourceFile
 
 -keep class com.customerglu.sdk.Modal.*{*;}
+-keepclassmembernames class io.netty.** { *; }
+-keepclassmembernames class org.jctools.** { *; }
+-keep class com.example.customerglu.Model.*{*;}
+-keep class com.example.customerglu.db.*{*;}

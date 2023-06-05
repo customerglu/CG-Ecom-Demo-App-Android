@@ -96,6 +96,14 @@ public class CGConstants {
     public static final String SDK_CONFIG_UPDATED = "SDK_CONFIG_UPDATED";
     public static final String USER_SEGMENT_UPDATED = "USER_SEGMENT_UPDATED";
 
+
+    public static final String STATE_SYNC = "STATE_SYNC";
+    public static final String NUDGES = "NUDGES";
+    public static final String ENTRYPOINTS = "ENTRYPOINTS";
+
+
+    //
+
     // One Link DEEPLINK SUPPORT
 
     public static final String OPEN_CAMPAIGN = "OPEN_CAMPAIGN";

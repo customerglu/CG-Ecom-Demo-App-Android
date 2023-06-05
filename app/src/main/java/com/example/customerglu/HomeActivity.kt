@@ -36,7 +36,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
         var type =  intent.getStringExtra(Constants.NavigateTo)
 
-
+        CustomerGlu.getInstance().openWalletAsFallback(false)
         bottomNavigationView = findViewById(R.id.bottomNavMenu)
         bottomNavigationView.setOnNavigationItemSelectedListener(this)
 

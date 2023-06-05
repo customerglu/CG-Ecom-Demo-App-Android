@@ -78,7 +78,7 @@ public class EntryPointManager extends View {
     String screenName = "";
     List<String> disallowedList;
     List<String> allowedList;
-
+    static EntryPointManager entryPointManager;
     RelativeLayout lContainerLayout;
     HashMap<String, Integer> campaignCountObj = null;
     ArrayList<EntryPointsData> entryPointsDataList;
@@ -93,10 +93,22 @@ public class EntryPointManager extends View {
         this.context = context;
 
 
-        screenName = getContext().getClass().getCanonicalName();
+        screenName = context.getClass().getCanonicalName();
         printDebugLogs(screenName);
         init();
 
+    }
+
+    public static EntryPointManager getInstance(Context mContext, String currentScreenName) {
+
+        if (entryPointManager == null) {
+            entryPointManager = new EntryPointManager(mContext, currentScreenName);
+        }
+        if (mContext!=null)
+        {
+           entryPointManager.context =  mContext;
+        }
+        return entryPointManager;
     }
 
     public EntryPointManager(Context context, String currentScreenName) {
@@ -111,6 +123,10 @@ public class EntryPointManager extends View {
 
     }
 
+    public void setScreenName(String newScreenName) {
+        screenName = newScreenName;
+        getEntryPointData();
+    }
 //    public void deRegisterReceiver() {
 //        context.unregisterReceiver(broadcastReceiver);
 //    }
@@ -132,7 +148,7 @@ public class EntryPointManager extends View {
 
         this.setId(R.id.web);
         DisplayMetrics displayMetrics = new DisplayMetrics();
-        ((Activity) getContext()).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         screenHeight = displayMetrics.heightPixels;
         screenWidth = displayMetrics.widthPixels;
 
@@ -326,18 +342,18 @@ public class EntryPointManager extends View {
                                                                     if (allowedList.size() > 0 && disallowedList.size() > 0) {
                                                                         if (!disallowedList.contains(screenName)) {
                                                                             myLayout = addButton(i);
-                                                                            ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                            ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
 
                                                                         }
                                                                     } else if (allowedList.size() > 0) {
                                                                         if (allowedList.contains(screenName)) {
                                                                             myLayout = addButton(i);
-                                                                            ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                            ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                         }
                                                                     } else if (disallowedList.size() > 0) {
                                                                         if (!disallowedList.contains(screenName)) {
                                                                             myLayout = addButton(i);
-                                                                            ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                            ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                         }
                                                                     }
 
@@ -353,18 +369,18 @@ public class EntryPointManager extends View {
 
 
                                                                             myLayout = addButton(i);
-                                                                            ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                            ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
 
                                                                         }
                                                                     } else if (allowedList.size() > 0) {
                                                                         if (allowedList.contains(screenName)) {
                                                                             myLayout = addButton(i);
-                                                                            ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                            ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                         }
                                                                     } else if (disallowedList.size() > 0) {
                                                                         if (!disallowedList.contains(screenName)) {
                                                                             myLayout = addButton(i);
-                                                                            ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                            ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                         }
                                                                     }
 
@@ -379,18 +395,18 @@ public class EntryPointManager extends View {
                                                                 if (allowedList.size() > 0 && disallowedList.size() > 0) {
                                                                     if (!disallowedList.contains(screenName)) {
                                                                         myLayout = addButton(i);
-                                                                        ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                        ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
 
                                                                     }
                                                                 } else if (allowedList.size() > 0) {
                                                                     if (allowedList.contains(screenName)) {
                                                                         myLayout = addButton(i);
-                                                                        ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                        ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                     }
                                                                 } else if (disallowedList.size() > 0) {
                                                                     if (!disallowedList.contains(screenName)) {
                                                                         myLayout = addButton(i);
-                                                                        ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                        ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                     }
                                                                 }
 
@@ -408,20 +424,20 @@ public class EntryPointManager extends View {
                                                                 if (!disallowedList.contains(screenName)) {
 
                                                                     myLayout = addButton(i);
-                                                                    ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                    ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
 
                                                                 }
                                                             } else if (allowedList.size() > 0) {
                                                                 if (allowedList.contains(screenName)) {
 
                                                                     myLayout = addButton(i);
-                                                                    ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                    ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                 }
                                                             } else if (disallowedList.size() > 0) {
                                                                 if (!disallowedList.contains(screenName)) {
 
                                                                     myLayout = addButton(i);
-                                                                    ((Activity) getContext()).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+                                                                    ((Activity) context).addContentView(myLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
                                                                 }
                                                             }
 
@@ -436,7 +452,7 @@ public class EntryPointManager extends View {
                                     }
 
                                 } catch (Exception e) {
-                                    printErrorLogs("EntryPoints Null");
+                                    printErrorLogs("EntryPoints Null "+e);
                                     CustomerGlu.getInstance().sendCrashAnalytics(context, e.toString());
                                 }
 
@@ -446,7 +462,6 @@ public class EntryPointManager extends View {
 
                                 /**   Display PopUp Logic  */
                                 //     CustomerGlu.getInstance().popupEntryPoint(context, screenName);
-
                                 CustomerGlu.getInstance().showPopUp(context, screenName);
 
 
@@ -483,7 +498,7 @@ public class EntryPointManager extends View {
         //  printErrorLogs("CustomerGlu", screenName);
         String floatingButtonUrl = "";
         MobileData.Content data = entryPointsDataList.get(i).getMobileData().getContent().get(0);
-        lContainerLayout = new RelativeLayout(getContext());
+        lContainerLayout = new RelativeLayout(context);
         lContainerLayout.setId(1000013 + i);
         if (!CustomerGlu.entryPointId.contains(lContainerLayout.getId())) {
             CustomerGlu.entryPointId.add(lContainerLayout.getId());
@@ -494,7 +509,7 @@ public class EntryPointManager extends View {
 
 
 // Custom view
-        CardView cardView = new CardView(getContext());
+        CardView cardView = new CardView(context);
 
         if (entryPointsDataList.get(i).getMobileData().getContainer().getBorderRadius() != null) {
             int borderRadius = Integer.parseInt(entryPointsDataList.get(i).getMobileData().getContainer().getBorderRadius());
@@ -504,7 +519,7 @@ public class EntryPointManager extends View {
         }
         cardView.setElevation(0);
         cardView.setCardBackgroundColor(Color.TRANSPARENT);
-        ImageView myImageView = new ImageView(getContext());
+        ImageView myImageView = new ImageView(context);
         myImageView.setScaleType(ImageView.ScaleType.FIT_XY);
         myImageView.setLayoutParams(new RelativeLayout.LayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)));
         cardView.addView(myImageView);
@@ -690,12 +705,12 @@ public class EntryPointManager extends View {
 
             //  Toast.makeText(context, ""+image, Toast.LENGTH_SHORT).show();
             if (image.contains(".gif") || image.contains(".Gif")) {
-                Glide.with(getContext())
+                Glide.with(context)
                         .asGif()
                         .load(image)
                         .into(myImageView);
             } else {
-                Glide.with(getContext()).asBitmap().load(image).into(myImageView);
+                Glide.with(context).asBitmap().load(image).into(myImageView);
             }
             //  main.setVisibility(VISIBLE);
 
@@ -997,10 +1012,10 @@ public class EntryPointManager extends View {
 
     @SuppressLint("ResourceAsColor")
     private void addCloseLayout() {
-        closeLayout = new RelativeLayout(getContext());
+        closeLayout = new RelativeLayout(context);
         closeLayout.setLayoutParams(new RelativeLayout.LayoutParams(WindowManager.LayoutParams.FILL_PARENT, WindowManager.LayoutParams.FILL_PARENT));
         closeLayout.setBackgroundColor(Color.TRANSPARENT);
-        close_lyt = new RelativeLayout(getContext());
+        close_lyt = new RelativeLayout(context);
         GradientDrawable gd = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0x00f1f1f2, 0xFB000000});
@@ -1010,17 +1025,17 @@ public class EntryPointManager extends View {
         close_lyt.setLayoutParams(closeLayoutParams);
 
         closeLayout.addView(close_lyt);
-        ((Activity) getContext()).addContentView(closeLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+        ((Activity) context).addContentView(closeLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
         closeLayout.setVisibility(GONE);
     }
 
     @SuppressLint("ResourceAsColor")
     private void addCloseButton() {
-        closeButtonLayout = new RelativeLayout(getContext());
+        closeButtonLayout = new RelativeLayout(context);
         closeButtonLayout.setLayoutParams(new RelativeLayout.LayoutParams(WindowManager.LayoutParams.FILL_PARENT, WindowManager.LayoutParams.FILL_PARENT));
 
 
-        TextView textView = new TextView(getContext());
+        TextView textView = new TextView(context);
         textView.setText("Drag here to dismiss");
         textView.setTextColor(Color.WHITE);
         textView.setTextSize(12.0f);
@@ -1029,7 +1044,7 @@ public class EntryPointManager extends View {
         textLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
         textLayoutParams.setMargins(0, 0, 0, (screenHeight / 10) - 50);
         textView.setLayoutParams(textLayoutParams);
-        closeButton = new ImageView(getContext());
+        closeButton = new ImageView(context);
         closeButton.setBackgroundResource(R.drawable.ic_delete_bin);
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(130, 130);
         layoutParams.addRule(ALIGN_PARENT_BOTTOM);
@@ -1038,7 +1053,7 @@ public class EntryPointManager extends View {
         closeButton.setLayoutParams(layoutParams);
         closeButtonLayout.addView(closeButton);
         closeButtonLayout.addView(textView);
-        ((Activity) getContext()).addContentView(closeButtonLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
+        ((Activity) context).addContentView(closeButtonLayout, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
         closeButtonLayout.setVisibility(GONE);
 
     }

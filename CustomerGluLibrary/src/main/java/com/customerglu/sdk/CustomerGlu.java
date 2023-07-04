@@ -272,8 +272,8 @@ public class CustomerGlu {
     public static String clientId;
     public static DiagnosticsHelper diagnosticsHelper;
     public static boolean isDiagnosticsEnabled = false;
-    public static boolean isMetricsEnabled = true;
-    public static boolean isCrashLoggingEnabled = true;
+    public static boolean isMetricsEnabled = false;
+    public static boolean isCrashLoggingEnabled = false;
     public static boolean allowAnonymousRegistration = false;
     public static boolean allowOpenWallet = true;
     static Disposable mqttBusDisposable;

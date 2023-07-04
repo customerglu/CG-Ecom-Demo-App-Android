@@ -136,7 +136,7 @@ class ProfileFragment : Fragment() {
 
         paymentMethod_ProfilePage.setOnClickListener {
             CustomerGlu.getInstance().loadCampaignById(context,"3d974c7f-5f9f-4efc-b370-9dcb43e4e609")
-           // startActivity(Intent(context, PaymentActivity::class.java))
+
         }
 
 

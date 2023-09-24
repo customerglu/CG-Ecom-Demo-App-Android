@@ -30,7 +30,6 @@ import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_SEND_EVENT_ST
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_SET_DARK_MODE_CALLED;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_USER_REGISTRATION_END;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_USER_REGISTRATION_START;
-import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_CONFIG_CALLED;
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_CONFIG_FAILURE;
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_CONFIG_RESPONSE;
 import static com.customerglu.sdk.Utils.CGConstants.CG_METRICS_SDK_CONFIG_SUCCESS;
@@ -144,7 +143,6 @@ import com.customerglu.sdk.Modal.RegisterModal;
 import com.customerglu.sdk.Modal.RewardModel;
 import com.customerglu.sdk.Modal.ScreenListModal;
 import com.customerglu.sdk.Modal.ScreenListResponseModel;
-import com.customerglu.sdk.Screens.RewardScreen;
 import com.customerglu.sdk.Utils.CGAPIHelper;
 import com.customerglu.sdk.Utils.CGConstants;
 import com.customerglu.sdk.Utils.Comman;
@@ -152,7 +150,6 @@ import com.customerglu.sdk.Utils.CryptoreUtils;
 import com.customerglu.sdk.Utils.DiagnosticsHelper;
 import com.customerglu.sdk.Utils.Prefs;
 import com.customerglu.sdk.Utils.SentryHelper;
-import com.customerglu.sdk.Web.FilterReward;
 import com.customerglu.sdk.cgRxBus.CGRxBus;
 import com.customerglu.sdk.clienttesting.ClientTestingPage;
 import com.customerglu.sdk.entrypoints.EntryPointManager;
@@ -172,7 +169,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
@@ -264,7 +260,7 @@ public class CustomerGlu {
 //    List<String> popupallowedList;
     public static String dismiss_trigger = "UI_BUTTON";
     public static String cg_app_platform = "ANDROID";
-    public static String cg_sdk_version = "2.3.6";
+    public static String cg_sdk_version = "2.3.10";
     private static String writeKey = "";
     public static boolean debugEnvironment = false;
     public static String darkStatusBarColor;
@@ -351,7 +347,7 @@ public class CustomerGlu {
         Maybe.fromCallable((Callable<Void>) () -> {
             settingInitializeConfiguration(context, writeKey);
             return null;
-        }).subscribeOn(Schedulers.computation()).subscribe();
+        }).subscribeOn(Schedulers.computation()).blockingGet();
 
     }
 
@@ -364,10 +360,7 @@ public class CustomerGlu {
 
     private void settingInitializeConfiguration(Context globalContext, String writeKey) {
         if (isOnline(globalContext)) {
-            printDebugLogs(" settingInitializeConfiguration SDK");
-            ArrayList<MetaData> metaData = new ArrayList<>();
-            metaData.add(new MetaData("writeKey", getWriteKey(globalContext)));
-            diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_CONFIG_CALLED, CGConstants.CG_LOGGING_EVENTS.METRICS, metaData);
+
             CGAPIHelper.enqueueWithRetry(Comman.getApiToken().getSDKConfiguration(writeKey), new Callback<CGConfigurationModel>() {
                 @Override
                 public void onResponse(Call<CGConfigurationModel> call, Response<CGConfigurationModel> response) {
@@ -535,8 +528,10 @@ public class CustomerGlu {
                                         if (mobile.getAndroidStatusBarLightColor() != null) {
                                             if (isValidColor(mobile.getAndroidStatusBarLightColor())) {
                                                 configure_status_bar_color = rgbaToArgb(mobile.getAndroidStatusBarLightColor());
+                                                lightStatusBarColor = rgbaToArgb(mobile.getAndroidStatusBarLightColor());
                                             } else {
                                                 configure_status_bar_color = "#FFFFFF";
+                                                lightStatusBarColor = "#FFFFFF";
                                             }
                                         }
                                     }
@@ -713,7 +708,7 @@ public class CustomerGlu {
                             }
                             break;
                         case CGConstants.SDK_CONFIG_UPDATED:
-                                CustomerGlu.getInstance().initializeSdk(globalContext);
+                            CustomerGlu.getInstance().initializeSdk(globalContext);
 
                             break;
                         case CGConstants.OPEN_CLIENT_TESTING_PAGE:
@@ -1275,6 +1270,7 @@ public class CustomerGlu {
         }
     }
 
+    @Deprecated
     public void showEntryPoint(Activity activity) {
         currentActivity = activity;
         printDebugLogs("Size - " + CustomerGlu.entryPointId.size());
@@ -1308,13 +1304,7 @@ public class CustomerGlu {
                 parent.removeView(myView);
             }
         }
-            EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
-
-//        if (entryPointManager != null) {
-//            entryPointManager.setScreenName(currentScreenName);
-//        } else {
-//            entryPointManager = new EntryPointManager(activity, currentScreenName);
-//        }
+        EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
     }
 
     /**
@@ -1339,15 +1329,6 @@ public class CustomerGlu {
         isDarkMode = value;
         if (isDarkMode) {
             isDarkModeEnabled(context);
-        }
-
-    }
-
-    public void setListenSystemWideDarkLightMode(Context context, boolean value) {
-        listenToSystemDarkLightMode = value;
-        if (listenToSystemDarkLightMode) {
-            isDarkModeEnabled(context);
-
         }
 
     }
@@ -1574,39 +1555,6 @@ public class CustomerGlu {
         }
     }
 
-
-    private void openBanner(Context context, String url, String open_layout, String
-            popupOpacity) {
-        try {
-            if (open_layout.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
-                Intent intent = new Intent(context, BottomSheet.class);
-                intent.putExtra("nudge_url", url);
-                intent.putExtra("opacity", String.valueOf(popupOpacity));
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-            } else if (open_layout.equalsIgnoreCase(CGConstants.BOTTOM_DEFAULT_NOTIFICATION)) {
-                Intent intent = new Intent(context, BottomDialog.class);
-                intent.putExtra("nudge_url", url);
-                intent.putExtra("opacity", String.valueOf(popupOpacity));
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-            } else if (open_layout.equalsIgnoreCase(CGConstants.MIDDLE_NOTIFICATION)) {
-                Intent intent = new Intent(context, MiddleDialog.class);
-                intent.putExtra("nudge_url", url);
-                intent.putExtra("opacity", String.valueOf(popupOpacity));
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-            } else {
-                Intent intent = new Intent(context, NotificationWeb.class);
-                intent.putExtra("nudge_url", url);
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-            }
-
-        } catch (Exception e) {
-            Comman.printErrorLogs(e.toString());
-        }
-    }
 
     public void openNudge(Context context, String nudgeId, String layout, double bg_opacity) {
         if (nudgeId != null && layout != null) {
@@ -1948,71 +1896,6 @@ public class CustomerGlu {
     }
 
     /**
-     * Used to send nudge_analytics events from SDK
-     */
-//    public void (Context context, String id, String nudge_type, String
-//            screenName, String actionName, String actionType, String openType) {
-//        String token = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN);
-//        mService = Comman.getApiToken();
-//        String action_type = "";
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-//        String currentDateandTime = sdf.format(new Date());
-//
-//        HashMap<String, Object> actionPayload = new HashMap<>();
-//        HashMap<String, Object> nudgeData = new HashMap<>();
-//
-//        if (actionType.isEmpty()) {
-//            action_type = "WALLET";
-//            nudgeData.put("campaignId", "CAMPAIGNID_NOTPRESENT");
-//
-//        } else if (actionType.equalsIgnoreCase("CUSTOM_URL")) {
-//            action_type = "CUSTOM_URL";
-//            nudgeData.put("campaignId", "CAMPAIGNID_NOTPRESENT");
-//
-//
-//        } else {
-//            action_type = "CAMPAIGN";
-//            nudgeData.put("campaignId", actionType);
-//        }
-//
-//        nudgeData.put("deviceType", "ANDROID");
-//        nudgeData.put("appSessionId", appSessionId);
-//        nudgeData.put("eventId", UUID.randomUUID().toString());
-//        nudgeData.put("eventName", "NUDGE_INTERACTION");
-//        nudgeData.put("userAgent", "APP");
-//        nudgeData.put("pageName", screenName);
-//        nudgeData.put("nudgeType", nudge_type);
-//        nudgeData.put("nudgeId", id);
-//        nudgeData.put("actionTarget", action_type);
-//        nudgeData.put("actionType", actionName);
-//        nudgeData.put("timestamp", currentDateandTime);
-//        nudgeData.put("pageType", openType);
-//        nudgeData.put("version", "4.0.0");
-//        nudgeData.put("optionalPayload", actionPayload);
-//        String writeKey = getWriteKey(context);
-//        String user_token = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN);
-//        printDebugLogs(nudgeData.toString());
-//        mService.sendNudgeAnalytics(writeKey, "Bearer " + user_token, nudgeData).enqueue(new Callback<RegisterModal>() {
-//            @Override
-//            public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
-//                printDebugLogs("Analytics API " + response.code());
-//
-//                if (response.code() == 200) {
-//                    printDebugLogs("Event sent");
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<RegisterModal> call, Throwable t) {
-//                printErrorLogs("Event failed");
-//
-//
-//            }
-//        });
-//
-//    }
-
-    /**
      * Used to register a user with CustomerGlu
      */
 
@@ -2302,89 +2185,6 @@ public class CustomerGlu {
             });
 
         }
-    }
-
-    public static List<EntryPointsData> mergeArraysAndRemoveDuplicates(List<EntryPointsData> currentList, List<EntryPointsData> newList) {
-        List<EntryPointsData> updateEntryPointList = new ArrayList<>();
-        for (int i = 0; i < newList.size(); i++) {
-            boolean isPresent = false;
-            int index = 0;
-            for (int j = 0; j < currentList.size(); j++) {
-                if (newList.get(i).get_id().equalsIgnoreCase(currentList.get(j).get_id())) {
-                    isPresent = true;
-                }
-            }
-            if (!isPresent) {
-                updateEntryPointList.add(newList.get(i));
-            }
-        }
-        //Step 1 : Merging of two arrays
-
-        //Defining mergedArray with combined size of arrayA and arrayB
-
-//        List<EntryPointsData> mergedArray = new List<EntryPointsData>[currentList.size() + newList.size()];
-//
-//        //Initializing pointers of arrayA, arrayB and mergedArray with 0
-//
-//        int i = 0, j = 0, k = 0;
-
-        //Inserting all elements of arrayA into mergedArray
-
-//        while (i < currentList.size()) {
-//            mergedArray[k] = currentList[i];
-//            k++;
-//            i++;
-//        }
-//
-//        //Inserting all elements of arrayB into mergedArray
-//
-//        while (j < arrayB.length) {
-//            mergedArray[k] = arrayB[j];
-//            k++;
-//            j++;
-//        }
-//        currentList.addAll(newList);
-//        //Step 2 : Removing duplicates from merged array
-//
-//        //Defining one HashSet object called setWithNoDuplicates
-//        //Remember, HashSet allows only unique elements
-//
-//        //Adding all elements of mergedArray into setWithNoDuplicates
-//        HashSet<EntryPointsData> hashSet = new HashSet<>();
-//
-//        // printing each element
-//        hashSet.addAll(currentList);
-
-//        Set<EntryPointsData> setWithNoDuplicates = new HashSet<>(currentList);
-//        System.out.println("setWithNoDuplicates " + setWithNoDuplicates);
-        //Now, setWithNoDuplicates will have only unique elements of mergedArray
-
-        //So, now iterate setWithNoDuplicates and
-        //add its elements into new array called mergedArrayWithNoDuplicates
-
-        // Iterator<EntryPointsData> it = setWithNoDuplicates.iterator();
-
-
-        //   updateEntryPointList = new ArrayList<>(hashSet);
-        updateEntryPointList.addAll(currentList);
-
-        printDebugLogs("setWithNoDuplicates List size " + updateEntryPointList.size());
-
-//
-//        int n = 0;
-//
-//        //Adding all elements of setWithNoDuplicates into mergedArrayWithNoDuplicates
-//
-//        while (it.hasNext()) {
-//            mergedArrayWithNoDuplicates. = it.next();
-//            n++;
-//        }
-
-        //Step 3 : Sorting merged array after removing duplicates
-
-        //   Arrays.sort(mergedArrayWithNoDuplicates);
-
-        return updateEntryPointList;
     }
 
     /**
@@ -4107,7 +3907,8 @@ public class CustomerGlu {
         }
 
     }
-        // Use of this method is only to check open wallet or not
+
+    // Use of this method is only to check open wallet or not
     private void checkOpenWalletOrNot(Context context, String campaign_id, NudgeConfiguration nudgeConfiguration) {
         sendInvalidCampaignIdCallback(context, campaign_id);
         if (allowOpenWallet && MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
@@ -4131,65 +3932,6 @@ public class CustomerGlu {
         }
     }
 
-    /**
-     * Used to open list of all campaigns
-     */
-    @Deprecated
-    public void loadAllCampaigns(Context context) {
-        if (!sdk_disable) {
-
-            if (isOnline(context)) {
-                String token = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN);
-                if (!token.isEmpty()) {
-                    try {
-
-                        Intent web = new Intent(context, RewardScreen.class);
-                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(web);
-
-                    } catch (Exception e) {
-                        String s = e.toString();
-
-                        CustomerGlu.getInstance().sendCrashAnalytics(context, s);
-                        printErrorLogs(e.toString());
-                    }
-                } else {
-                    printErrorLogs("Please register token not Present");
-                }
-            } else {
-                printErrorLogs("No Internet Connection");
-            }
-        }
-
-    }
-
-    @Deprecated
-    public void loadCampaignsByFilter(Context context, Map<String, Object> filter_params) {
-        if (!sdk_disable) {
-
-            if (isOnline(context)) {
-                String token = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_TOKEN);
-                if (!token.isEmpty()) {
-                    try {
-                        Intent web = new Intent(context, FilterReward.class);
-                        web.putExtra("params", (Serializable) filter_params);
-
-                        web.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(web);
-                    } catch (Exception e) {
-                        String s = e.toString();
-
-                        CustomerGlu.getInstance().sendCrashAnalytics(context, s);
-                        printErrorLogs(e.toString());
-                    }
-                } else {
-                    printErrorLogs("Please register token not Present");
-
-                }
-                printErrorLogs("No Internet Connection");
-            }
-        }
-    }
 
     /**
      * Used to open a campaign with respective campaign_id

@@ -9,7 +9,6 @@ import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -116,7 +115,7 @@ public class Prefs {
             editor.putString(DIMISSED_VALUE, json_value);
             editor.apply();
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs("" + e.toString());
         }
     }
 
@@ -133,7 +132,7 @@ public class Prefs {
             }.getType();
             return gson.fromJson(value, type);
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
 
         }
         return null;
@@ -152,7 +151,7 @@ public class Prefs {
             editor.putString(encKey, encValue);
             editor.apply();
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
         }
     }
 
@@ -174,7 +173,7 @@ public class Prefs {
             }.getType();
             return gson.fromJson(finalValue, type);
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
 
         }
         return null;
@@ -213,7 +212,7 @@ public class Prefs {
 
             editor.apply();
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
 
         }
     }
@@ -230,7 +229,7 @@ public class Prefs {
             }.getType();
             return gson.fromJson(value, type);
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
 
         }
         return null;
@@ -248,7 +247,7 @@ public class Prefs {
             editor.putString(encKey, encValue);
             editor.apply();
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
 
         }
     }
@@ -270,7 +269,7 @@ public class Prefs {
             }.getType();
             return gson.fromJson(finalValue, type);
         } catch (Exception e) {
-            Log.e("Customerglu", e.toString());
+            printErrorLogs(e.toString());
 
         }
         return null;

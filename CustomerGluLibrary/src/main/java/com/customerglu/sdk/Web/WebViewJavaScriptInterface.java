@@ -20,15 +20,18 @@ import android.os.Looper;
 import android.os.Parcelable;
 import android.webkit.JavascriptInterface;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
 import androidx.core.content.FileProvider;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Modal.MetaData;
 import com.customerglu.sdk.Modal.NudgeConfiguration;
 import com.customerglu.sdk.Utils.CGConstants;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -288,17 +291,18 @@ public class WebViewJavaScriptInterface {
             uiHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    Picasso.with(context).load(String.valueOf(imgUrl)).into(new Target() {
+
+                    Glide.with(context).asBitmap().load(String.valueOf(imgUrl)).into(new CustomTarget<Bitmap>() {
                         @Override
-                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
                             try {
                                 imageUriList.add(getLocalBitmapUri(context, bitmap));
                                 if (imageUriList.size() == imageUrls.size()) {
                                     if (channelName.equalsIgnoreCase("WHATSAPP")) {
-                                        progressDialog.dismiss();
+                                        //         progressDialog.dismiss();
                                         shareImageToWhatsapp();
                                     } else {
-                                        progressDialog.dismiss();
+                                        //    progressDialog.dismiss();
                                         shareImage(bitmap);
                                     }
                                 }
@@ -309,15 +313,10 @@ public class WebViewJavaScriptInterface {
                         }
 
                         @Override
-                        public void onBitmapFailed(Drawable errorDrawable) {
-                            printErrorLogs("Picasso Check:" + errorDrawable);
-
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
                         }
                     });
+
                 }
             });
 

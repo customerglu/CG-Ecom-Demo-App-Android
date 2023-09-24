@@ -111,9 +111,6 @@ public class OpenCustomerGluWeb extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (!CustomerGlu.configure_loading_screen_color.isEmpty()) {
-            setTheme(R.style.Theme_Transparent);
-        }
         super.onCreate(savedInstanceState);
         ArrayList<MetaData> responseMetaData = new ArrayList<>();
         responseMetaData.add(new MetaData("Activity Created", "" + "true"));

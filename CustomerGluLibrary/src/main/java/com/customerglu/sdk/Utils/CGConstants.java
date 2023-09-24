@@ -77,7 +77,7 @@ public class CGConstants {
     public static final String CG_PLATFORM_VALUE = "android-native-sdk";
     public static final String CG_PLATFORM_KEY = "cg-app-platform";
     public static final String CG_SDK_VERSION_KEY = "cg-sdk-version";
-    public static final String CG_SDK_VERSION_VAL = "2.3.6";
+    public static final String CG_SDK_VERSION_VAL = "2.3.10";
     public static final String MQTT_SERVER_HOST = "hermes.customerglu.com";
     public static final String DEV_MQTT_SERVER_HOST = "dev-hermes.customerglu.com";
 

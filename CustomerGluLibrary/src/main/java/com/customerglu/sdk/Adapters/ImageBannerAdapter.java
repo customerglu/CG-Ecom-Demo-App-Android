@@ -15,7 +15,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -345,7 +344,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                                                 mContext.startActivity(intent);
                                             }
                                         } catch (Exception e) {
-                                            Log.e("CUSTOMERGLU", "" + e);
+                                            printErrorLogs("" + e);
                                         }
                                     }
                                     break;

@@ -30,7 +30,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -410,7 +409,7 @@ public class ClientTestingPage extends Activity {
             dialog.show();
 
         } catch (Exception e) {
-            Log.e("", "" + e);
+            printErrorLogs("" + e);
         }
 
     }

@@ -47,7 +47,7 @@ object CustomerGluManager {
                             if (jsonObject.has("deepLink")) {
 
                                 var deeplink = jsonObject.get("deepLink")
-
+                              //  Toast.makeText(context, ""+deeplink, Toast.LENGTH_SHORT).show()
                                 if (deeplink.equals("customerglu://profile")) {
                                     navigateToActivity(context,Constants.Profile)
 
@@ -77,7 +77,7 @@ object CustomerGluManager {
                         ) {
                             val data = intent.getStringExtra("data")
                             val jsonObject = JSONObject(data)
-                            //   Log.e("WebAnalytics ", "" + jsonObject);
+                               Log.e("Analytics ", "" + jsonObject);
                             //  Toast.makeText(context, "Analytics " + jsonObject, Toast.LENGTH_SHORT).show();
                         }
                         if (intent.action.equals("CUSTOMERGLU_BANNER_LOADED", ignoreCase = true)) {
@@ -132,7 +132,7 @@ object CustomerGluManager {
                context.startActivity(intent)            }
 
             override fun onFail(message: String?) {
-  //          //     println("")
+                 println(message)
             }
         })
     }
@@ -268,6 +268,16 @@ object CustomerGluManager {
     fun sendEventsToCG(context: Context,eventName:String,eventProperties:HashMap<String,Any>)
     {
         CustomerGlu.getInstance().sendEvent(context,eventName,eventProperties)
+    }
+
+    fun allowAnonymousUserRegistration(value: Boolean)
+    {
+        CustomerGlu.getInstance().allowAnonymousRegistration(value)
+    }
+
+    fun openWalletAsFallback(value: Boolean)
+    {
+        CustomerGlu.getInstance().openWalletAsFallback(value)
     }
 
 }

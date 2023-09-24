@@ -6,6 +6,7 @@
 //import android.content.IntentFilter;
 //import android.os.Bundle;
 //import android.os.Handler;
+//import android.util.Log;
 //import android.widget.Toast;
 //
 //import com.customerglu.sdk.CustomerGlu;
@@ -31,12 +32,7 @@
 //    }
 //
 //    private static void setUpCTACallback(Context context) {
-//        // Log.e("WebAnalytics ", "" + jsonObject);
-//        // Toast.makeText(context, "Analytics " + jsonObject, Toast.LENGTH_SHORT).show();
-//        // Toast.makeText(getApplicationContext(), data, Toast.LENGTH_LONG).show();
-//        // banner.setVisibility(GONE);
-//        // Log.e("WebAnalytics INVALID", data);
-//        // Add the logic to redirect to appropriate page
+//
 //        BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
 //            @Override
 //            public void onReceive(Context context, Intent intent) {
@@ -47,18 +43,21 @@
 //                            try {
 //                                JSONObject jsonObject = new JSONObject(data);
 //                                if (jsonObject.has("deepLink")) {
-//                                    Object deeplink = jsonObject.get("deepLink");
+//                                    String deeplink = jsonObject.getString("deepLink");
 //                                    Toast.makeText(context, "Please handle CTA Deeplink", Toast.LENGTH_SHORT).show();
 //                                }
 //                            } catch (Exception e) {
-//
+//                                Log.e("CUSTOMERGLU",""+e);
 //                            }
 //                        }
 //                        if (intent.getAction().equals("CUSTOMERGLU_ANALYTICS_EVENT")) {
 //                            String data = intent.getStringExtra("data");
 //                            try {
 //                                JSONObject jsonObject = new JSONObject(data);
+//                                Log.d("ANALYTICS_EVENT", data);
+//
 //                            } catch (Exception e) {
+//                                Log.e("CUSTOMERGLU",""+e);
 //
 //                            }
 //                            // Log.e("WebAnalytics ", "" + jsonObject);
@@ -66,12 +65,12 @@
 //                        }
 //                        if (intent.getAction().equals("CUSTOMERGLU_BANNER_LOADED")) {
 //                            String data = intent.getStringExtra("data");
-//                            // Toast.makeText(getApplicationContext(), data, Toast.LENGTH_LONG).show();
-//                            // banner.setVisibility(GONE);
+//                            Log.d("BANNER_LOADED", data);
+//
 //                        }
 //                        if (intent.getAction().equals("CG_INVALID_CAMPAIGN_ID")) {
 //                            String data = intent.getStringExtra("data");
-//                            // Log.e("WebAnalytics INVALID", data);
+//                             Log.e(" INVALID CampaignId", data);
 //                        }
 //                        // Add the logic to redirect to appropriate page
 //                    }, 500);
@@ -81,6 +80,9 @@
 //            }
 //        };
 //        context.registerReceiver(mMessageReceiver, new IntentFilter("CUSTOMERGLU_DEEPLINK_EVENT"));
+//        context.registerReceiver(mMessageReceiver, new IntentFilter("CUSTOMERGLU_ANALYTICS_EVENT"));
+//        context.registerReceiver(mMessageReceiver, new IntentFilter("CUSTOMERGLU_BANNER_LOADED"));
+//        context.registerReceiver(mMessageReceiver, new IntentFilter("CG_INVALID_CAMPAIGN_ID"));
 //    }
 //
 //    public static void enableEntryPoints(Context context) {
@@ -121,8 +123,8 @@
 //        CustomerGlu.getInstance().openNudge(context, nudgeId, nudgeConfiguration);
 //    }
 //
-//    public static void setClassName(Activity activity, String screenName) {
-//        CustomerGluManager.setClassNameForCG(activity, screenName);
+//    public static void setClassNameForCG(Activity activity, String screenName) {
+//        CustomerGlu.getInstance().showEntryPoint(activity, screenName);
 //    }
 //    public void displayCGNotifications(Context context, JSONObject jsonObject, int icon) {
 //        CustomerGlu.getInstance().displayCustomerGluNotification(context, jsonObject, icon);
@@ -190,22 +192,22 @@
 //            public void onFailure(CGConstants.CGSTATE exceptions) {
 //                switch (exceptions) {
 //                    case EXCEPTION:
-//                        //TODO: Not yet implemented
+//
 //                        break;
 //                    case NETWORK_EXCEPTION:
-//                        //TODO: Not yet implemented
+//
 //                        break;
 //                    case INVALID_CAMPAIGN:
-//                        //TODO: Not yet implemented
+//
 //                        break;
 //                    case CAMPAIGN_UNAVAILABLE:
-//                        //TODO: Not yet implemented
+//
 //                        break;
 //                    case INVALID_URL:
-//                        //TODO: Not yet implemented
+//
 //                        break;
 //                    case USER_NOT_SIGNED_IN:
-//                        //TODO: Not yet implemented
+//
 //                        break;
 //                    default:
 //                        break;
@@ -219,7 +221,16 @@
 //    }
 //
 //    public void sendEventsToCG(Context context, String eventName, HashMap<String, Object> eventProperties) {
-//        CustomerGluManager.sendEventsToCG(context, eventName, eventProperties);
+//        CustomerGlu.getInstance().sendEvent(context, eventName, eventProperties);
+//    }
+//
+//    public void allowAnonymousUserRegistration(boolean value)
+//    {
+//        CustomerGlu.getInstance().allowAnonymousRegistration(value);
+//    }
+//    public void openWalletAsFallback(boolean value)
+//    {
+//        CustomerGlu.getInstance().openWalletAsFallback(value);
 //    }
 //
 //}

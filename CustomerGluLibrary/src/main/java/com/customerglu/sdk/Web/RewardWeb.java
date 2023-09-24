@@ -1,5 +1,6 @@
 package com.customerglu.sdk.Web;
 
+import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 import static com.customerglu.sdk.Utils.Comman.validateURL;
 
 import android.annotation.SuppressLint;
@@ -7,7 +8,6 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
-import android.util.Log;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.ProgressBar;
@@ -43,7 +43,7 @@ public class RewardWeb extends Activity {
 
             @Override
             public void uncaughtException(Thread thread, Throwable e) {
-                Log.e("CustomerGlu", "Uncaught Exception" + e);
+                printErrorLogs("Uncaught Exception" + e);
                 String s = "Uncaught Exception" + e;
 
                 CustomerGlu.getInstance().sendCrashAnalytics(getApplicationContext(), s);

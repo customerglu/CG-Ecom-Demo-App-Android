@@ -129,9 +129,6 @@ public class NotificationWeb extends BaseActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        if (!CustomerGlu.configure_loading_screen_color.isEmpty()) {
-            setTheme(R.style.Theme_Transparent);
-        }
         super.onCreate(savedInstanceState);
         if (CustomerGlu.isDarkModeEnabled(getApplicationContext())) {
             darkMode = "darkMode=true";

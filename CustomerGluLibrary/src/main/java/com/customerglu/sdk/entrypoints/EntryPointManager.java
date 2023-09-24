@@ -27,7 +27,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -104,9 +103,8 @@ public class EntryPointManager extends View {
         if (entryPointManager == null) {
             entryPointManager = new EntryPointManager(mContext, currentScreenName);
         }
-        if (mContext!=null)
-        {
-           entryPointManager.context =  mContext;
+        if (mContext != null) {
+            entryPointManager.context = mContext;
         }
         return entryPointManager;
     }
@@ -452,7 +450,7 @@ public class EntryPointManager extends View {
                                     }
 
                                 } catch (Exception e) {
-                                    printErrorLogs("EntryPoints Null "+e);
+                                    printErrorLogs("EntryPoints Null " + e);
                                     CustomerGlu.getInstance().sendCrashAnalytics(context, e.toString());
                                 }
 
@@ -577,7 +575,7 @@ public class EntryPointManager extends View {
                                             context.startActivity(intent);
                                         }
                                     } catch (Exception e) {
-                                        Log.e("CUSTOMERGLU", "" + e);
+                                        printErrorLogs("" + e);
                                     }
                                 }
                                 break;
@@ -926,7 +924,7 @@ public class EntryPointManager extends View {
                                                     context.startActivity(intent);
                                                 }
                                             } catch (Exception e) {
-                                                Log.e("CUSTOMERGLU", "" + e);
+                                                printErrorLogs("" + e);
                                             }
                                         }
                                         break;

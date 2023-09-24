@@ -153,6 +153,7 @@ import com.customerglu.sdk.Utils.SentryHelper;
 import com.customerglu.sdk.cgRxBus.CGRxBus;
 import com.customerglu.sdk.clienttesting.ClientTestingPage;
 import com.customerglu.sdk.entrypoints.EntryPointManager;
+import com.customerglu.sdk.entrypoints.PictureInPicture;
 import com.customerglu.sdk.mqtt.CGMqttClientHelper;
 import com.customerglu.sdk.notification.BottomDialog;
 import com.customerglu.sdk.notification.BottomSheet;
@@ -285,6 +286,7 @@ public class CustomerGlu {
     private static boolean MQTT_STATE_SYNC = false;
     private static boolean MQTT_NUDGES = false;
     private static boolean MQTT_ENTRY_POINTS = false;
+    PictureInPicture pictureInPicture;
 
     private CustomerGlu() {
         s = "CustomerGlu Singleton class";
@@ -1305,6 +1307,12 @@ public class CustomerGlu {
             }
         }
         EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
+    }
+
+    public void showPIP(Activity activity) {
+        if (pictureInPicture == null) {
+            pictureInPicture = new PictureInPicture(activity);
+        }
     }
 
     /**

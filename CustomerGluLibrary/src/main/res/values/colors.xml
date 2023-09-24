@@ -10,4 +10,7 @@
     <color name="transparent">#00050505</color>
     <color name="full_transparent">#80101010</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC5</color>
 </resources>

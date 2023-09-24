@@ -72,6 +72,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     override fun onResume() {
         super.onResume()
+        CustomerGlu.getInstance().showPIP(this)
       //  addDebugBanner()
     }
 

@@ -6,7 +6,6 @@ import static android.content.Context.DOWNLOAD_SERVICE;
 import static android.content.Context.NOTIFICATION_SERVICE;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static androidx.core.app.NotificationCompat.PRIORITY_MAX;
-import static com.customerglu.sdk.Utils.CGConstants.ANDROID;
 import static com.customerglu.sdk.Utils.CGConstants.ANONYMOUSID;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_BACKGROUND_NOTIFICATION_CALLED;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_CLEAR_GLU_DATA_CALLED;
@@ -69,7 +68,6 @@ import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_DISMISS;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
 import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
 import static com.customerglu.sdk.Utils.CGConstants.ETAG;
-import static com.customerglu.sdk.Utils.CGConstants.FLUTTER;
 import static com.customerglu.sdk.Utils.CGConstants.HASH_CODE;
 import static com.customerglu.sdk.Utils.CGConstants.IS_LOGIN;
 import static com.customerglu.sdk.Utils.CGConstants.LIGHT_LOTTIE_FILE_NAME;
@@ -81,7 +79,8 @@ import static com.customerglu.sdk.Utils.CGConstants.OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
 import static com.customerglu.sdk.Utils.CGConstants.POPUP_DATE;
 import static com.customerglu.sdk.Utils.CGConstants.PUSH_NOTIFICATION_CLICK;
-import static com.customerglu.sdk.Utils.CGConstants.REACT_NATIVE;
+import static com.customerglu.sdk.Utils.CGConstants.SSL_CERTIFICATE_STRING;
+import static com.customerglu.sdk.Utils.Comman.arrayListStringConvertor;
 import static com.customerglu.sdk.Utils.Comman.isJSONValid;
 import static com.customerglu.sdk.Utils.Comman.isValidColor;
 import static com.customerglu.sdk.Utils.Comman.isValidURL;
@@ -109,6 +108,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.http.SslCertificate;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -120,6 +120,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.URLUtil;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.RelativeLayout;
 
 import androidx.core.app.NotificationCompat;
 
@@ -139,17 +141,20 @@ import com.customerglu.sdk.Modal.EventData;
 import com.customerglu.sdk.Modal.MetaData;
 import com.customerglu.sdk.Modal.MqttDataModel;
 import com.customerglu.sdk.Modal.NudgeConfiguration;
+import com.customerglu.sdk.Modal.ProgramFilterModel;
 import com.customerglu.sdk.Modal.RegisterModal;
 import com.customerglu.sdk.Modal.RewardModel;
 import com.customerglu.sdk.Modal.ScreenListModal;
 import com.customerglu.sdk.Modal.ScreenListResponseModel;
 import com.customerglu.sdk.Utils.CGAPIHelper;
 import com.customerglu.sdk.Utils.CGConstants;
+import com.customerglu.sdk.Utils.CGHelper;
 import com.customerglu.sdk.Utils.Comman;
 import com.customerglu.sdk.Utils.CryptoreUtils;
 import com.customerglu.sdk.Utils.DiagnosticsHelper;
 import com.customerglu.sdk.Utils.Prefs;
 import com.customerglu.sdk.Utils.SentryHelper;
+import com.customerglu.sdk.Web.EUICallbackHelper;
 import com.customerglu.sdk.cgRxBus.CGRxBus;
 import com.customerglu.sdk.clienttesting.ClientTestingPage;
 import com.customerglu.sdk.entrypoints.EntryPointManager;
@@ -165,6 +170,7 @@ import com.google.gson.JsonObject;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -173,6 +179,9 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -189,18 +198,21 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import io.reactivex.Maybe;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
 
 public class CustomerGlu {
 
     public static EntryPointsModel entryPointsModel;
     public static RewardModel loadCampaignResponse;
     public static ArrayList<String> campaignIdList;
+    public static String campaignIds = "";
     public CGDeepLinkListener cgDeepLinkListener;
     public static boolean sdk_disable = false;
     public static boolean isPrecachingEnable = false;
@@ -256,18 +268,20 @@ public class CustomerGlu {
     private ApiInterface mService;
     private String token = "", user_id = "";
     private RegisterModal registerModal;
+    private ProgramFilterModel programFilterModel;
     public static RegisterModal.User cgUserData;
     //    List<String> popupdisallowedList;
 //    List<String> popupallowedList;
     public static String dismiss_trigger = "UI_BUTTON";
     public static String cg_app_platform = "ANDROID";
-    public static String cg_sdk_version = "2.3.10";
+    public static String cg_sdk_version = "2.3.14";
     private static String writeKey = "";
     public static boolean debugEnvironment = false;
     public static String darkStatusBarColor;
     public static String lightStatusBarColor;
     public static String clientId;
     public static DiagnosticsHelper diagnosticsHelper;
+    public static EUICallbackHelper euiCallbackHandler;
     public static boolean isDiagnosticsEnabled = false;
     public static boolean isMetricsEnabled = false;
     public static boolean isCrashLoggingEnabled = false;
@@ -280,12 +294,16 @@ public class CustomerGlu {
     public static String clientDeeplinkUrl = "";
     public static String callbackConfigurationUrl = "";
     public static CGRxBus cgrxBus;
-
     private static String LoadCampaignETAG = "";
     private static String EntryPointETAG = "";
     private static boolean MQTT_STATE_SYNC = false;
     private static boolean MQTT_NUDGES = false;
     private static boolean MQTT_ENTRY_POINTS = false;
+    public static boolean isHyperLinkUrl = false;
+    public static boolean sslPinningEnable = true;
+    public static SslCertificate sslCertificate;
+    public static boolean euiProxyEnabled = true;
+    public static CGHelper cgHelper;
     PictureInPicture pictureInPicture;
 
     private CustomerGlu() {
@@ -312,11 +330,61 @@ public class CustomerGlu {
             cgrxBus = new CGRxBus();
             loadCampaignResponse = null;
             campaignIdList = new ArrayList<>();
-
+            euiCallbackHandler = new EUICallbackHelper();
+            cgHelper = CGHelper.getInstance();
         }
 
         return single_instance;
     }
+
+//    public synchronized void registerActivityCallback(android.app.Application application) {
+//        if (application == null) {
+//            return;
+//        }
+//
+//        String screenName = "";
+//
+//        application.registerActivityLifecycleCallbacks(
+//                new android.app.Application.ActivityLifecycleCallbacks() {
+//
+//                    @Override
+//                    public void onActivityCreated(Activity activity, Bundle bundle) {
+//
+//                    }
+//
+//                    @Override
+//                    public void onActivityDestroyed(Activity activity) {
+//                    }
+//
+//                    @Override
+//                    public void onActivityPaused(Activity activity) {
+//                    }
+//
+//                    @Override
+//                    public void onActivityResumed(Activity activity) {
+//                        if (activity != null) {
+//                            printErrorLogs("Current screen name " + activity.getClass().getSimpleName());
+//                            CustomerGlu.getInstance().showEntryPoint(activity, activity.getClass().getSimpleName());
+//                            //    screenName   = activity.getClass().getSimpleName();
+//
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
+//                    }
+//
+//                    @Override
+//                    public void onActivityStarted(Activity activity) {
+//                    }
+//
+//                    @Override
+//                    public void onActivityStopped(Activity activity) {
+//                    }
+//                }
+//
+//        );
+//    }
 
     public static void setWriteKey(String value) {
         writeKey = value;
@@ -391,8 +459,12 @@ public class CustomerGlu {
                                     enableSentry = mobile.getEnableSentry();
                                     initializeSentryDsn(globalContext, mobile);
                                 }
+
                                 if (mobile.getDisableSdk() != null) {
                                     sdk_disable = mobile.getDisableSdk();
+                                }
+                                if (mobile.getAllowProxy() != null) {
+                                    euiProxyEnabled = mobile.getAllowProxy();
                                 }
                                 if (mobile.getEnableAnalytics() != null) {
                                     isAnalyticsEventEnabled = mobile.getEnableAnalytics();
@@ -479,6 +551,8 @@ public class CustomerGlu {
                                             lightBackground = "#FFFFFF";
                                         }
                                     }
+
+                                    checkSSLCertificate(mobile);
                                     if (mobile.getDarkBackground() != null) {
                                         if (isValidColor(mobile.getDarkBackground())) {
                                             darkBackground = rgbaToArgb(mobile.getDarkBackground());
@@ -586,9 +660,8 @@ public class CustomerGlu {
 
                                     if (!myUserData.isEmpty()) {
                                         cgUserData = gson.fromJson(myUserData, RegisterModal.User.class);
-
                                     }
-                                    printDebugLogs("settingInitializeConfiguration Done");
+
 
                                 }
                                 printDebugLogs("settingInitializeConfiguration Done");
@@ -636,6 +709,85 @@ public class CustomerGlu {
         }
     }
 
+    private void checkSSLCertificate(CGConfigData.CGMobileConfig mobile) {
+        if (mobile.getEnableSslPinning() != null && mobile.getEnableSslPinning()) {
+            boolean isSSLCertificateValid = true;
+            String localSSLCertificate = Prefs.getEncKey(globalContext, SSL_CERTIFICATE_STRING);
+            if (localSSLCertificate == null || localSSLCertificate.isEmpty()) {
+                isSSLCertificateValid = false;
+            } else {
+                sslCertificate = initBundleCert();
+                if (sslCertificate != null) {
+                    Date certificateDate = sslCertificate.getValidNotAfterDate();
+                    if (new Date().after(certificateDate)) {
+                        isSSLCertificateValid = false;
+                    }
+                } else {
+                    isSSLCertificateValid = false;
+
+                }
+            }
+            if (!isSSLCertificateValid) {
+                if (mobile.getSslCertificate() != null && !mobile.getSslCertificate().isEmpty()) {
+                    downloadSSLCertificate(mobile.getSslCertificate());
+                }
+            }
+
+        } else {
+            sslPinningEnable = false;
+        }
+    }
+
+    private void downloadSSLCertificate(String certificateUrl) {
+
+
+        Comman.getApiStringBuilder().readSSLCertificate(certificateUrl).enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String cerFileAsString = response.body();
+                    Prefs.putEncKey(globalContext, CGConstants.SSL_CERTIFICATE_STRING, cerFileAsString);
+                    sslCertificate = initBundleCert();
+                    // Handle the downloaded .cer file as a string
+                } else {
+                    // Handle the request failure here
+                }
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                // Handle network or request errors here
+            }
+        });
+
+
+    }
+
+
+    private SslCertificate initBundleCert() {
+        if (sslCertificate == null) {
+
+            SslCertificate bundledSelfSignedCert;
+            try {
+                if (globalContext != null) {
+                    CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+                    String sslCertificate = Prefs.getEncKey(globalContext, CGConstants.SSL_CERTIFICATE_STRING);
+                    InputStream ins = new ByteArrayInputStream(sslCertificate.getBytes(StandardCharsets.UTF_8));
+
+                    X509Certificate cert = (X509Certificate) certFactory.generateCertificate(ins);
+                    return new SslCertificate(cert);
+                }
+            } catch (Exception e) {
+                printErrorLogs("" + e);
+            }
+        }
+        return CustomerGlu.sslCertificate;
+
+    }
+
+    public boolean isCampaignValid(String campaignId) {
+        return cgHelper.isCampaignValid(campaignId);
+    }
 
     private void initializeMqtt() {
         if (!sdk_disable) {
@@ -776,26 +928,26 @@ public class CustomerGlu {
 
 
     private static void initializeSentryDsn(Context globalContext, CGConfigData.CGMobileConfig mobile) {
-        switch (cg_app_platform) {
-            case ANDROID:
-                if (mobile.getSentryDsn() != null && mobile.getSentryDsn().getAndroid() != null && !mobile.getSentryDsn().getAndroid().isEmpty()) {
-                    String androidDsn = mobile.getSentryDsn().getAndroid();
-                    SentryHelper.getInstance().initSentry(globalContext, androidDsn);
-                }
-                break;
-            case FLUTTER:
-                if (mobile.getSentryDsn() != null && mobile.getSentryDsn().getFlutter() != null && !mobile.getSentryDsn().getFlutter().isEmpty()) {
-                    String flutterDsn = mobile.getSentryDsn().getFlutter();
-                    SentryHelper.getInstance().initSentry(globalContext, flutterDsn);
-                }
-                break;
-            case REACT_NATIVE:
-                if (mobile.getSentryDsn() != null && mobile.getSentryDsn().getReactNative() != null && !mobile.getSentryDsn().getReactNative().isEmpty()) {
-                    String reactNativeDsn = mobile.getSentryDsn().getReactNative();
-                    SentryHelper.getInstance().initSentry(globalContext, reactNativeDsn);
-                }
-                break;
-        }
+//        switch (cg_app_platform) {
+//            case ANDROID:
+//                if (mobile.getSentryDsn() != null && mobile.getSentryDsn().getAndroid() != null && !mobile.getSentryDsn().getAndroid().isEmpty()) {
+//                    String androidDsn = mobile.getSentryDsn().getAndroid();
+//                    SentryHelper.getInstance().initSentry(globalContext, androidDsn);
+//                }
+//                break;
+//            case FLUTTER:
+//                if (mobile.getSentryDsn() != null && mobile.getSentryDsn().getFlutter() != null && !mobile.getSentryDsn().getFlutter().isEmpty()) {
+//                    String flutterDsn = mobile.getSentryDsn().getFlutter();
+//                    SentryHelper.getInstance().initSentry(globalContext, flutterDsn);
+//                }
+//                break;
+//            case REACT_NATIVE:
+//                if (mobile.getSentryDsn() != null && mobile.getSentryDsn().getReactNative() != null && !mobile.getSentryDsn().getReactNative().isEmpty()) {
+//                    String reactNativeDsn = mobile.getSentryDsn().getReactNative();
+//                    SentryHelper.getInstance().initSentry(globalContext, reactNativeDsn);
+//                }
+//                break;
+//        }
     }
 
     public boolean isSentryEnabled() {
@@ -1024,6 +1176,7 @@ public class CustomerGlu {
 
 
     private void executeDeepLink(DeepLinkWormholeModel.DeepLinkData deepLinkData, String type) {
+        String campaignId = "";
         NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
         if (deepLinkData.getContent().getCloseOnDeepLink() != null) {
             nudgeConfiguration.setCloseOnDeepLink(deepLinkData.getContent().getCloseOnDeepLink());
@@ -1037,6 +1190,9 @@ public class CustomerGlu {
         if (deepLinkData.getContent().getType() != null) {
             nudgeConfiguration.setLayout(deepLinkData.getContent().getType());
         }
+        if (deepLinkData.getContent().getCampaignId() != null) {
+            campaignId = deepLinkData.getContent().getCampaignId();
+        }
 
 
         if (type.equalsIgnoreCase("u")) {
@@ -1047,6 +1203,7 @@ public class CustomerGlu {
         }
         if (type.equalsIgnoreCase("c")) {
             if (deepLinkData.getContent().getCampaignId() != null) {
+                String finalCampaignId = campaignId;
                 retrieveData(globalContext, new RewardInterface() {
                     @Override
                     public void onSuccess(RewardModel rewardModel) {
@@ -1069,7 +1226,8 @@ public class CustomerGlu {
                         }
 
                         if (campaignFound) {
-                            displayCGNudge(globalContext, campaignUrl, nudgeConfiguration);
+
+                            displayCGNudge(globalContext, campaignUrl, finalCampaignId, nudgeConfiguration);
                             if (cgDeepLinkListener != null) {
                                 cgDeepLinkListener.onSuccess(CGConstants.CGSTATE.SUCCESS, deepLinkData);
                             }
@@ -1079,7 +1237,7 @@ public class CustomerGlu {
                                 cgDeepLinkListener.onFailure(CGConstants.CGSTATE.CAMPAIGN_UNAVAILABLE);
                             }
                             if (rewardModel.defaultUrl != null) {
-                                displayCGNudge(globalContext, rewardModel.defaultUrl, nudgeConfiguration);
+                                displayCGNudge(globalContext, rewardModel.defaultUrl, finalCampaignId, nudgeConfiguration);
                             }
                         }
                     }
@@ -1276,19 +1434,23 @@ public class CustomerGlu {
     public void showEntryPoint(Activity activity) {
         currentActivity = activity;
         printDebugLogs("Size - " + CustomerGlu.entryPointId.size());
-        for (int i = 0; i < 10; i++) {
-            @SuppressLint("ResourceType") View myView = ((Activity) activity).findViewById(1000013 + i);
-            if (myView != null) {
-                //   printDebugLogs("Remove" + "" + CustomerGlu.entryPointId.get(i));
-                ViewGroup parent = (ViewGroup) myView.getParent();
-                parent.removeView(myView);
+        if (currentActivity != null) {
+            for (int i = 0; i < 10; i++) {
+                @SuppressLint("ResourceType") View myView = ((Activity) activity).findViewById(1000013 + i);
+                if (myView != null) {
+                    //   printDebugLogs("Remove" + "" + CustomerGlu.entryPointId.get(i));
+                    ViewGroup parent = (ViewGroup) myView.getParent();
+                    if (parent != null) {
+                        parent.removeView(myView);
+                    }
+                }
             }
-        }
 
-        if (!lastScreenName.equalsIgnoreCase("")) {
-            entryPointManager = new EntryPointManager(activity, currentScreenName);
-        } else {
-            entryPointManager = new EntryPointManager(activity);
+            if (!lastScreenName.equalsIgnoreCase("")) {
+                entryPointManager = new EntryPointManager(activity, currentScreenName);
+            } else {
+                entryPointManager = new EntryPointManager(activity);
+            }
         }
     }
 
@@ -1298,15 +1460,22 @@ public class CustomerGlu {
         if (entryPointManager != null) {
             entryPointManager.popupDismissThread();
         }
-        for (int i = 0; i < 10; i++) {
-            @SuppressLint("ResourceType") View myView = ((Activity) activity).findViewById(1000013 + i);
-            if (myView != null) {
-                //   printDebugLogs("Remove" + "" + CustomerGlu.entryPointId.get(i));
-                ViewGroup parent = (ViewGroup) myView.getParent();
-                parent.removeView(myView);
+        if (activity != null) {
+            for (int i = 0; i < 10; i++) {
+                @SuppressLint("ResourceType")
+                View myView = ((Activity) activity).findViewById(1000013 + i);
+                if (myView != null) {
+                    //   printDebugLogs("Remove" + "" + CustomerGlu.entryPointId.get(i));
+                    ViewGroup parent = (ViewGroup) myView.getParent();
+                    if (parent != null) {
+                        parent.removeView(myView);
+                    }
+                }
             }
         }
-        EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
+        if (currentActivity != null) {
+            EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
+        }
     }
 
     public void showPIP(Activity activity) {
@@ -1494,7 +1663,7 @@ public class CustomerGlu {
             nudgeConfiguration.setLayout(open_layout);
             nudgeConfiguration.setCloseOnDeepLink(closeOnDeepLink);
             nudgeConfiguration.setOpacity(Double.parseDouble(popupOpacity));
-            displayCGNudge(context, campaign_id, nudgeConfiguration);
+            displayCGNudge(context, campaign_id, "", nudgeConfiguration);
 
         } else {
             NudgeConfiguration nudgeConfiguration = new NudgeConfiguration();
@@ -1510,7 +1679,7 @@ public class CustomerGlu {
 
     }
 
-    public void displayCGNudge(Context context, String finalUrl, NudgeConfiguration
+    public void displayCGNudge(Context context, String finalUrl, String campaignId, NudgeConfiguration
             nudgeConfiguration) {
         try {
             String layout = nudgeConfiguration.getLayout();
@@ -1519,45 +1688,29 @@ public class CustomerGlu {
             double absoluteHeight = nudgeConfiguration.getAbsoluteHeight();
             double relativeHeight = nudgeConfiguration.getRelativeHeight();
             boolean isHyperlink = nudgeConfiguration.isHyperlink();
+            isHyperLinkUrl = isHyperlink;
+            Intent intent = null;
             if (layout.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
-                Intent intent = new Intent(context, BottomSheet.class);
-                intent.putExtra("nudge_url", finalUrl);
-                intent.putExtra("closeOnDeepLink", "" + closeOnDeeplink);
-                intent.putExtra("opacity", String.valueOf(bg_opacity));
-                intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
-                intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
-                intent.putExtra("isHyperLink", "" + isHyperlink);
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-            } else if (layout.equalsIgnoreCase(CGConstants.BOTTOM_POPUP) || layout.equalsIgnoreCase(CGConstants.BOTTOM_DEFAULT_NOTIFICATION)) {
-                Intent intent = new Intent(context, BottomDialog.class);
-                intent.putExtra("nudge_url", finalUrl);
-                intent.putExtra("closeOnDeepLink", "" + closeOnDeeplink);
-                intent.putExtra("opacity", String.valueOf(bg_opacity));
-                intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
-                intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
-                intent.putExtra("isHyperLink", "" + isHyperlink);
+                intent = new Intent(context, BottomSheet.class);
 
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
+            } else if (layout.equalsIgnoreCase(CGConstants.BOTTOM_POPUP) || layout.equalsIgnoreCase(CGConstants.BOTTOM_DEFAULT_NOTIFICATION)) {
+                intent = new Intent(context, BottomDialog.class);
+
             } else if (layout.equalsIgnoreCase(CGConstants.MIDDLE_POPUP) || layout.equalsIgnoreCase(CGConstants.MIDDLE_NOTIFICATION)) {
-                Intent intent = new Intent(context, MiddleDialog.class);
-                intent.putExtra("nudge_url", finalUrl);
-                intent.putExtra("closeOnDeepLink", "" + closeOnDeeplink);
-                intent.putExtra("opacity", String.valueOf(bg_opacity));
-                intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
-                intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
-                intent.putExtra("isHyperLink", "" + isHyperlink);
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
+                intent = new Intent(context, MiddleDialog.class);
+
             } else {
-                Intent intent = new Intent(context, NotificationWeb.class);
-                intent.putExtra("closeOnDeepLink", "" + closeOnDeeplink);
-                intent.putExtra("nudge_url", finalUrl);
-                intent.putExtra("isHyperLink", "" + isHyperlink);
-                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
+                intent = new Intent(context, NotificationWeb.class);
             }
+            intent.putExtra("nudge_url", finalUrl);
+            intent.putExtra("closeOnDeepLink", "" + closeOnDeeplink);
+            intent.putExtra("opacity", String.valueOf(bg_opacity));
+            intent.putExtra("absoluteHeight", String.valueOf(absoluteHeight));
+            intent.putExtra("relativeHeight", String.valueOf(relativeHeight));
+            intent.putExtra("isHyperLink", "" + isHyperlink);
+            intent.putExtra("campaignId", campaignId);
+            intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
         } catch (Exception e) {
             printErrorLogs("" + e);
         }
@@ -1587,6 +1740,7 @@ public class CustomerGlu {
                             String my_user_id = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
                             String finalUrl = domain + "/fragment-map/?fragmentMapId=" + nudgeId + "&userId=" + my_user_id + "&writeKey=" + write_key;
                             printDebugLogs("openNudge " + finalUrl);
+                            isHyperLinkUrl = false;
                             if (layout.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                                 Intent intent = new Intent(context, BottomSheet.class);
                                 intent.putExtra("nudge_url", finalUrl);
@@ -1659,6 +1813,7 @@ public class CustomerGlu {
                             String my_user_id = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
                             String finalUrl = domain + "/fragment-map/?fragmentMapId=" + nudgeId + "&userId=" + my_user_id + "&writeKey=" + write_key;
                             printDebugLogs("openNudge " + finalUrl);
+                            isHyperLinkUrl = false;
                             if (layout.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                                 Intent intent = new Intent(context, BottomSheet.class);
                                 intent.putExtra("nudge_url", finalUrl);
@@ -1733,7 +1888,7 @@ public class CustomerGlu {
                                 String my_user_id = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
                                 String finalUrl = domain + "/fragment-map/?fragmentMapId=" + nudgeId + "&userId=" + my_user_id + "&writeKey=" + write_key;
                                 printDebugLogs("openNudge " + finalUrl);
-                                displayCGNudge(context, finalUrl, nudgeConfiguration);
+                                displayCGNudge(context, finalUrl, "", nudgeConfiguration);
 
 
                             } catch (Exception e) {
@@ -1788,6 +1943,7 @@ public class CustomerGlu {
                                 String my_user_id = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
                                 String finalUrl = domain + "/fragment-map/?fragmentMapId=" + nudgeId + "&userId=" + my_user_id + "&writeKey=" + write_key;
                                 printDebugLogs("openNudge " + finalUrl);
+                                isHyperLinkUrl = false;
                                 if (layout.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                                     Intent intent = new Intent(context, BottomSheet.class);
                                     intent.putExtra("nudge_url", finalUrl);
@@ -1842,12 +1998,12 @@ public class CustomerGlu {
     }
 
     public void cgAnalyticsEventManager(Context context, String
-            eventName, Map<String, Object> data) {
+            eventName, String campaignId, Map<String, Object> data) {
         if (CustomerGlu.isAnalyticsEventEnabled) {
             mService = Comman.getApiToken();
             String user_id = Prefs.getEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID);
             SimpleDateFormat sdf = new SimpleDateFormat(CGConstants.DATE_FORMAT_PATTERN, Locale.getDefault());
-            String currentDateandTime = sdf.format(new Date());
+            String currentDateAndTime = sdf.format(new Date());
             HashMap<String, Object> nudgeData = new HashMap<>();
 
             HashMap<String, Object> platformDetails = new HashMap<>();
@@ -1860,15 +2016,16 @@ public class CustomerGlu {
             } else if (eventName.equalsIgnoreCase(ENTRY_POINT_CLICK) || eventName.equalsIgnoreCase(ENTRY_POINT_LOAD) || eventName.equalsIgnoreCase(ENTRY_POINT_DISMISS)) {
                 nudgeData.put("entry_point_data", data);
             } else {
+                printErrorLogs("testCampaignId" + data.get("campaign_id"));
                 nudgeData.put("webview_content", data);
             }
 
-//        nudgeData.put("appSessionId", appSessionId);
             nudgeData.put("event_id", UUID.randomUUID().toString());
             nudgeData.put("analytics_version", "4.0.0");
+            nudgeData.put("campaign_id", campaignId);
             nudgeData.put("event_name", eventName);
             nudgeData.put("type", CGConstants.TRACK);
-            nudgeData.put("timestamp", currentDateandTime);
+            nudgeData.put("timestamp", currentDateAndTime);
             nudgeData.put("user_id", user_id);
             nudgeData.put("platform_details", platformDetails);
             if (eventName.equalsIgnoreCase(CGConstants.WEBVIEW_DISMISS)) {
@@ -1879,7 +2036,6 @@ public class CustomerGlu {
             Gson gson = new Gson();
             JsonObject nudgeAnalyticsData = gson.toJsonTree(nudgeData).getAsJsonObject();
             printDebugLogs(nudgeAnalyticsData.toString());
-            //  printErrorLogs("My Analytics " + nudgeAnalyticsData.toString());
             Intent intent = new Intent("CUSTOMERGLU_ANALYTICS_EVENT");
             intent.putExtra("data", nudgeAnalyticsData.toString());
             context.sendBroadcast(intent);
@@ -2048,14 +2204,31 @@ public class CustomerGlu {
                                                         if (isMqttEnabled && android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
                                                             initializeMqtt();
                                                         }
+                                                        if (euiProxyEnabled) {
+                                                            euiCallbackHandler.programData = Prefs.getEncKey(context, CGConstants.PROGRAM_DATA);
+                                                            euiCallbackHandler.rewardData = Prefs.getEncKey(context, CGConstants.REWARD_DATA);
 
 
+                                                        }
+                                                        String oldCampaignId = Prefs.getKey(context, CGConstants.CAMPAIGN_ID_STRING);
+                                                        //  printDebugLogs("old campaign id " + oldCampaignId);
                                                         retrieveData(context, new RewardInterface() {
                                                             @Override
                                                             public void onSuccess(RewardModel rewardModel) {
 
                                                                 printDebugLogs(" campaigns load successfully");
+
                                                                 callBack.onSuccess(registerModal);
+                                                                printDebugLogs("new campaign id " + campaignIds);
+                                                                if (euiProxyEnabled) {
+
+                                                                    if (!oldCampaignId.equalsIgnoreCase(campaignIds) || euiCallbackHandler.rewardData.isEmpty() || euiCallbackHandler.programData.isEmpty()) {
+                                                                        printDebugLogs("Doing Reward and program  call");
+                                                                        euiCallbackHandler.getProgramData();
+                                                                        euiCallbackHandler.getRewardData();
+                                                                    }
+                                                                    showWebView(context);
+                                                                }
                                                                 if (isBannerEntryPointsEnabled && !isBannerEntryPointsHasData) {
                                                                     getEntryPointData(context);
                                                                 }
@@ -2133,6 +2306,56 @@ public class CustomerGlu {
             }
         }
     }
+
+    private void showWebView(Context context) {
+        if (euiProxyEnabled) {
+            Observable.fromCallable(new Callable<String>() {
+                        @SuppressLint("SetJavaScriptEnabled")
+                        @Override
+                        public String call() throws Exception {
+
+                            if (context != null) {
+                                RelativeLayout layout = new RelativeLayout(context);
+                                RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(0, 0);
+                                params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                                layout.setLayoutParams(params);
+                                WebView webView = new WebView(context);
+                                layout.addView(webView);
+                                layout.setVisibility(View.INVISIBLE);
+                                Comman.printErrorLogs("Web start loading");
+                                webView.getSettings().setJavaScriptEnabled(true);
+                                webView.getSettings().setDomStorageEnabled(true);
+                                webView.loadUrl(CGConstants.PRE_LOAD_URL);
+
+                                Comman.printErrorLogs("Web start loaded");
+
+                                webView.setWebViewClient(new WebViewClient() {
+                                    @Override
+                                    public void onPageFinished(WebView view, String url) {
+                                        super.onPageFinished(webView, url);
+                                        view.destroy();
+                                    }
+                                });
+
+                            }
+
+                            return "";
+                        }
+                    }).subscribeOn(AndroidSchedulers.mainThread())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError(new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) throws Exception {
+                            if (throwable != null) {
+                                printErrorLogs("" + throwable);
+                            }
+                        }
+                    })
+                    .subscribe();
+
+        }
+    }
+
 
     private static void updateEntryPoints() {
 
@@ -2613,7 +2836,7 @@ public class CustomerGlu {
                                                     }
                                                     nudgeData.put("entry_point_content", entry_point_content);
                                                     nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-                                                    CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
+                                                    CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), nudgeData);
                                                     //          CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
                                                     loadWeblink(context, entryPointsDataList, i, popupOpacity);
                                                     //    CustomerGlu.getInstance().loadPopUpBanner(context, campaign_id, popup_open_layout, popupOpacity, absoluteHeight, relativeHeight, isClose);
@@ -2676,7 +2899,7 @@ public class CustomerGlu {
                                                 }
                                                 nudgeData.put("entry_point_content", entry_point_content);
                                                 nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-                                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
+                                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), nudgeData);
                                                 //         CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
 
                                                 loadWeblink(context, entryPointsDataList, i, popupOpacity);
@@ -2741,7 +2964,7 @@ public class CustomerGlu {
                                                 }
                                                 nudgeData.put("entry_point_content", entry_point_content);
                                                 nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-                                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
+                                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), nudgeData);
                                                 //  CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
 
                                                 loadWeblink(context, entryPointsDataList, i, popupOpacity);
@@ -2811,7 +3034,7 @@ public class CustomerGlu {
                                             }
                                             nudgeData.put("entry_point_content", entry_point_content);
                                             nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-                                            CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
+                                            CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), nudgeData);
                                             //      CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
                                             //    Log.e("Showing", "Loading");
 
@@ -2878,7 +3101,7 @@ public class CustomerGlu {
                     nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
                     nudgeConfiguration.setHyperlink(true);
                     if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
-                        CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
+                        CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), "", nudgeConfiguration);
                     }
                     break;
 
@@ -3577,13 +3800,19 @@ public class CustomerGlu {
                 if (loadCampaignResponse.getCampaigns().get(i).getUrl() != null && loadCampaignResponse.getCampaigns().get(i).getCampaignId() != null) {
                     if (!loadCampaignResponse.getCampaigns().get(i).getCampaignId().isEmpty()) {
                         campaignIdList.add(loadCampaignResponse.getCampaigns().get(i).getCampaignId());
+
                     }
                 }
             }
+            if (euiProxyEnabled) {
 
+                campaignIds = arrayListStringConvertor(campaignIdList);
+                Prefs.putKey(globalContext, CGConstants.CAMPAIGN_ID_STRING, campaignIds);
+            }
         }
 
     }
+
 
     /**
      * Used to show list of campaign with filter
@@ -3815,18 +4044,20 @@ public class CustomerGlu {
             if (campaign_id.equalsIgnoreCase(CG_OPEN_WALLET)) {
 
                 if (MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
-                    displayCGNudge(context, loadCampaignResponse.defaultUrl, nudgeConfiguration);
+                    printErrorLogs("CAMPAIGN LOADS FROM MQTT");
+                    displayCGNudge(context, loadCampaignResponse.defaultUrl, campaign_id, nudgeConfiguration);
                 } else {
                     CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
                         @Override
                         public void onSuccess(RewardModel rewardModel) {
+                            printErrorLogs("CAMPAIGN LOADS FROM API");
                             String default_url = rewardModel.defaultUrl;
-                            displayCGNudge(context, default_url, nudgeConfiguration);
+                            displayCGNudge(context, default_url, campaign_id, nudgeConfiguration);
                         }
 
                         @Override
                         public void onFailure(String message) {
-                            displayCGNudge(context, ERROR_URL, nudgeConfiguration);
+                            displayCGNudge(context, ERROR_URL, campaign_id, nudgeConfiguration);
 
                         }
                     });
@@ -3838,8 +4069,9 @@ public class CustomerGlu {
                 if (MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.getCampaigns() != null && isMqttEnabled && isMqttConnected) {
                     Campaigns campaigns = new Campaigns(campaign_id);
                     if (loadCampaignResponse.getCampaigns().size() > 0 && loadCampaignResponse.getCampaigns().contains(campaigns)) {
+                        printErrorLogs("CAMPAIGN LOADS FROM MQTT");
                         String url = loadCampaignResponse.campaigns.get(loadCampaignResponse.getCampaigns().lastIndexOf(campaigns)).getUrl();
-                        displayCGNudge(context, url, nudgeConfiguration);
+                        displayCGNudge(context, url, campaign_id, nudgeConfiguration);
                     } else {
                         checkOpenWalletOrNot(context, campaign_id, nudgeConfiguration);
                     }
@@ -3847,6 +4079,7 @@ public class CustomerGlu {
                     CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
                         @Override
                         public void onSuccess(RewardModel rewardModel) {
+                            printErrorLogs("CAMPAIGN LOADS FROM API");
                             isThere[0] = false;
                             Gson gson = new Gson();
                             String json = gson.toJson(rewardModel);
@@ -3857,7 +4090,7 @@ public class CustomerGlu {
                                 String default_url = rewardModel.defaultUrl;
                                 if (allowOpenWallet) {
 
-                                    displayCGNudge(context, default_url, nudgeConfiguration);
+                                    displayCGNudge(context, default_url, campaign_id, nudgeConfiguration);
                                 }
                                 sendInvalidCampaignIdCallback(context, campaign_id);
                                 // Toast.makeText(getApplicationContext(), "Invalid CampaignId", Toast.LENGTH_SHORT).show();
@@ -3865,7 +4098,6 @@ public class CustomerGlu {
                                 String json1 = gson.toJson(rewardModel);
 
                                 for (int i = 0; i < rewardModel.getCampaigns().size(); i++) {
-                                    System.out.println(i);
                                     String tag = "";
 
                                     if (rewardModel.getCampaigns().get(i).getBanner() != null && rewardModel.getCampaigns().get(i).getBanner().getTag() != null) {
@@ -3883,7 +4115,7 @@ public class CustomerGlu {
                                         //     Toast.makeText(OpenCustomerGluWeb.this, url, Toast.LENGTH_SHORT).show();
                                         isThere[0] = true;
 
-                                        displayCGNudge(context, url, nudgeConfiguration);
+                                        displayCGNudge(context, url, campaign_id, nudgeConfiguration);
                                         break;
                                     }
 
@@ -3892,7 +4124,7 @@ public class CustomerGlu {
                                     sendInvalidCampaignIdCallback(context, campaign_id);
                                     String default_url = rewardModel.defaultUrl;
                                     if (allowOpenWallet) {
-                                        displayCGNudge(context, default_url, nudgeConfiguration);
+                                        displayCGNudge(context, default_url, campaign_id, nudgeConfiguration);
                                     }
                                 }
 
@@ -3905,7 +4137,7 @@ public class CustomerGlu {
                         public void onFailure(String message) {
 
                             String url = "https://end-user-ui.customerglu.com/error/?source=native-sdk&code=" + 504 + "&message=" + "Please Try again later";
-                            displayCGNudge(context, url, nudgeConfiguration);
+                            displayCGNudge(context, url, campaign_id, nudgeConfiguration);
                         }
                     });
                 }
@@ -3920,19 +4152,19 @@ public class CustomerGlu {
     private void checkOpenWalletOrNot(Context context, String campaign_id, NudgeConfiguration nudgeConfiguration) {
         sendInvalidCampaignIdCallback(context, campaign_id);
         if (allowOpenWallet && MQTT_STATE_SYNC && loadCampaignResponse != null && loadCampaignResponse.defaultUrl != null && !loadCampaignResponse.defaultUrl.isEmpty() && isMqttEnabled && isMqttConnected) {
-            displayCGNudge(context, loadCampaignResponse.defaultUrl, nudgeConfiguration);
+            displayCGNudge(context, loadCampaignResponse.defaultUrl, campaign_id, nudgeConfiguration);
         } else {
             if (allowOpenWallet) {
                 CustomerGlu.getInstance().retrieveData(context, new RewardInterface() {
                     @Override
                     public void onSuccess(RewardModel rewardModel) {
                         String default_url = rewardModel.defaultUrl;
-                        displayCGNudge(context, default_url, nudgeConfiguration);
+                        displayCGNudge(context, default_url, campaign_id, nudgeConfiguration);
                     }
 
                     @Override
                     public void onFailure(String message) {
-                        displayCGNudge(context, ERROR_URL, nudgeConfiguration);
+                        displayCGNudge(context, ERROR_URL, campaign_id, nudgeConfiguration);
 
                     }
                 });
@@ -4074,6 +4306,7 @@ public class CustomerGlu {
             jsonObject.put("nudge_id", nudge_id);
             jsonObject.put("click_action", url);
             jsonObject.put("campaign_id", campaign_id);
+            isHyperLinkUrl = false;
             if (type.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                 intent = new Intent(context, BottomSheet.class);
                 intent.putExtra("nudge_url", url);
@@ -4222,7 +4455,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
                             nudgeData.put("nudge_id", nudge_id);
-                            cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                            cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, "false", opacity, absoluteHeight, relativeHeight);
                         } else {
                             if (image.equalsIgnoreCase("")) {
@@ -4234,7 +4467,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                                 displayNotification(context, title, body, url, icon, notification_type, absoluteHeight, relativeHeight, opacity, isClosed, nudge_id, campaign_id);
 
                             } else {
@@ -4246,7 +4479,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                                 displayExpandedNotification(context, title, body, url, image, icon, notification_type, absoluteHeight, relativeHeight, opacity, isClosed, nudge_id, campaign_id);
                             }
                         }
@@ -4334,7 +4567,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
                             nudgeData.put("nudge_id", nudge_id);
-                            cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                            cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, isClosed, opacity, absoluteHeight, relativeHeight);
 
                         } else {
@@ -4347,7 +4580,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                                 displayNotification(context, title, body, url, icon, notification_type, absoluteHeight, relativeHeight, opacity, isClosed, nudge_id, campaign_id);
 
                             } else {
@@ -4359,7 +4592,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                                 displayExpandedNotification(context, title, body, url, image, icon, notification_type, absoluteHeight, relativeHeight, opacity, isClosed, nudge_id, campaign_id);
                             }
                         }
@@ -4443,7 +4676,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
                             nudgeData.put("nudge_id", nudge_id);
-                            cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                            cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, "false", 0.5, absoluteHeight, relativeHeight);
                         } else {
                             if (image.equalsIgnoreCase("")) {
@@ -4455,7 +4688,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                                 displayNotification(context, title, body, url, icon, notification_type, absoluteHeight, relativeHeight, 0.5, isClosed, nudge_id, campaign_id);
 
                             } else {
@@ -4467,7 +4700,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, nudgeData);
+                                cgAnalyticsEventManager(context, NOTIFICATION_LOAD, campaign_id, nudgeData);
                                 displayExpandedNotification(context, title, body, url, image, icon, notification_type, absoluteHeight, relativeHeight, 0.5, isClosed, nudge_id, campaign_id);
                             }
                         }
@@ -4569,7 +4802,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_id", nudge_id);
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
-                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                                 handleInAppNotifications(context, url, notification_type, isClosed, 0.5, absoluteHeight, relativeHeight);
 
 
@@ -4621,7 +4854,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
                             nudgeData.put("nudge_id", nudge_id);
-                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, isClosed, 0.5, absoluteHeight, relativeHeight);
 
 
@@ -4706,7 +4939,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                                 handleInAppNotifications(context, url, notification_type, isClosed, opacity, absoluteHeight, relativeHeight);
 
 
@@ -4758,7 +4991,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
                             nudgeData.put("nudge_id", nudge_id);
-                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, isClosed, 0.5, absoluteHeight, relativeHeight);
 
 
@@ -4840,7 +5073,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
                                 nudgeData.put("nudge_id", nudge_id);
-                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                                 handleInAppNotifications(context, url, notification_type, isClosed, opacity, absoluteHeight, relativeHeight);
 
 
@@ -4892,7 +5125,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_id", nudge_id);
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
-                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, isClosed, 0.5, absoluteHeight, relativeHeight);
 
 
@@ -4979,7 +5212,7 @@ public class CustomerGlu {
                                 nudgeData.put("nudge_id", nudge_id);
                                 nudgeData.put("nudge_layout", notification_type);
                                 nudgeData.put("click_action", url);
-                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                                cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                                 handleInAppNotifications(context, url, notification_type, isClosed, 0.5, absoluteHeight, relativeHeight);
 
 
@@ -5031,7 +5264,7 @@ public class CustomerGlu {
                             nudgeData.put("nudge_id", nudge_id);
                             nudgeData.put("nudge_layout", notification_type);
                             nudgeData.put("click_action", url);
-                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, nudgeData);
+                            cgAnalyticsEventManager(context, PUSH_NOTIFICATION_CLICK, campaign_id, nudgeData);
                             handleInAppNotifications(context, url, notification_type, isClosed, 0.5, absoluteHeight, relativeHeight);
 
 
@@ -5054,6 +5287,7 @@ public class CustomerGlu {
             isClosed, double opacity, String absoluteHeight, String relativeHeight) {
 
         try {
+            isHyperLinkUrl = false;
             if (type.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                 Intent intent = new Intent(context, BottomSheet.class);
                 intent.putExtra("nudge_url", url);
@@ -5110,6 +5344,7 @@ public class CustomerGlu {
             jsonObject.put("nudge_id", nudge_id);
             jsonObject.put("click_action", url);
             jsonObject.put("campaign_id", campaign_id);
+            isHyperLinkUrl = false;
             if (type.equalsIgnoreCase(CGConstants.BOTTOM_SHEET_NOTIFICATION)) {
                 intent = new Intent(context, BottomSheet.class);
                 intent.putExtra("nudge_url", url);
@@ -5176,7 +5411,7 @@ public class CustomerGlu {
                     .setLargeIcon(bmp)
                     .setStyle(new NotificationCompat.BigPictureStyle()
                             .bigPicture(bmp)
-                            .bigLargeIcon(null))
+                            .bigLargeIcon(bmp))
                     .setDefaults(DEFAULT_ALL);
             NotificationManager manager = null;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
@@ -5451,6 +5686,9 @@ public class CustomerGlu {
         EntryPointETAG = "";
         LoadCampaignETAG = "";
         campaignIdList = new ArrayList<>();
+        campaignIds = "";
+        euiCallbackHandler.programData = "";
+        euiCallbackHandler.rewardData = "";
         File zip = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
         File file = new File(zip, "CustomerGlu");
         recursiveDelete(file);

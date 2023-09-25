@@ -2,10 +2,16 @@ package com.customerglu.sdk.Web;
 
 import static com.customerglu.sdk.Utils.Comman.build;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
+import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.graphics.Bitmap;
+import android.net.http.SslCertificate;
+import android.net.http.SslError;
 import android.os.Environment;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -20,27 +26,31 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.HashMap;
 
 public class CGWebClient extends WebViewClient {
     Context context;
     HashMap<String, Object> webData;
     int count = 0;
+    Activity activity;
 
     public CGWebClient(Context context) {
         this.context = context;
 
     }
 
-    public CGWebClient(Context context, HashMap<String, Object> webData) {
+    public CGWebClient(Context context, HashMap<String, Object> webData, Activity activity) {
         this.context = context;
         this.webData = webData;
+        this.activity = activity;
     }
 
 
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
 
         String url = request.getUrl().toString();
+        //    printErrorLogs("shouldInterceptRequest " + url);
         String[] split = url.split("/");
         int size = split.length;
         String req = "/" + split[size - 1];
@@ -174,22 +184,62 @@ public class CGWebClient extends WebViewClient {
             return build();
         }
 
-        //  Log.e("CustomerGlu","cache miss");
 
         return super.shouldInterceptRequest(view, request);
     }
 
     @Override
+    public void onPageStarted(WebView view, String url, Bitmap favicon) {
+        super.onPageStarted(view, url, favicon);
+
+        if (!CustomerGlu.isHyperLinkUrl && CustomerGlu.sslPinningEnable) {
+            if (CustomerGlu.sslCertificate != null) {
+                SslCertificate webViewSslCertificate = view.getCertificate();
+                if (!webViewSslCertificate.toString().equalsIgnoreCase(CustomerGlu.sslCertificate.toString())) {
+                    if (activity != null) {
+                        activity.finish();
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+        try {
+            if (CustomerGlu.sslPinningEnable) {
+                boolean isValidSSLCertificate = error.getCertificate().getValidNotAfterDate().after(new Date());
+
+                if (!isValidSSLCertificate) {
+
+                    printDebugLogs("ssl Invalid");
+                    handler.cancel();
+                }
+                if (!CustomerGlu.isHyperLinkUrl) {
+                    if (!view.getCertificate().toString().equalsIgnoreCase(CustomerGlu.sslCertificate.toString())) {
+                        handler.cancel();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            printErrorLogs("" + e);
+        }
+    }
+
+
+    @Override
     public void onPageFinished(WebView view, String url) {
         printDebugLogs("WebEvents onPageFinished");
 
-
-        //   pg.setVisibility(View.GONE);
+        String campaignId = "";
         if (count == 0) {
             if (webData != null) {
                 webData.put("webview_url", url);
                 printDebugLogs("WebEvents loaded");
-                CustomerGlu.getInstance().cgAnalyticsEventManager(context, CGConstants.WEBVIEW_LOAD, webData);
+                if (webData.containsKey("campaignId")) {
+                    campaignId = "" + webData.get("campaignId");
+                }
+                CustomerGlu.getInstance().cgAnalyticsEventManager(context, CGConstants.WEBVIEW_LOAD, campaignId, webData);
                 count++;
             }
 
@@ -199,13 +249,6 @@ public class CGWebClient extends WebViewClient {
         super.onPageFinished(view, url);
     }
 
-//    @Override
-//    public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-//        if (pg != null) {
-////            pg.setVisibility(View.GONE);
-//        }
-//        super.onReceivedError(view, errorCode, description, failingUrl);
-//    }
 
     @Override
     public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {

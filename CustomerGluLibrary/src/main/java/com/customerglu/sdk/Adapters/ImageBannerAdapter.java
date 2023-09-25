@@ -1,6 +1,5 @@
 package com.customerglu.sdk.Adapters;
 
-import static android.view.View.GONE;
 import static com.customerglu.sdk.Utils.CGConstants.CG_OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.ENTRY_POINT_LOAD;
@@ -16,10 +15,8 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -52,9 +49,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
     private final Context mContext;
     public List<MobileData.Content> contentList = new ArrayList<>();
     View v;
-    private int lastPosition = -1;
-
-    String url = "", opacity, open_layout = "", screenName = "";
+    String opacity, open_layout = "", screenName = "";
     private final EntryPointsData entryPointsModel;
     private double relativeHeight = 0;
     private double absoluteHeight = 0;
@@ -103,110 +98,20 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
             }
 
             if (!bannerImageUrl.isEmpty()) {
-                if (data.getType().equalsIgnoreCase("IMAGE")) {
-                    holder.webView.setVisibility(GONE);
-                    holder.mImage.setVisibility(View.VISIBLE);
-                    if (bannerImageUrl.contains(".gif") || bannerImageUrl.contains(".Gif")) {
 
-                        Glide.with(mContext)
-                                .asGif()
-                                .load(bannerImageUrl)
-                                .into(new CustomTarget<GifDrawable>() {
-                                    @Override
-                                    public void onResourceReady(@NonNull GifDrawable resource, @Nullable Transition<? super GifDrawable> transition) {
-                                        holder.mImage.setImageDrawable(resource);
-                                        CustomerGlu.cgrxBus.postEvent(new CGBannerDismissShimmerEvent(true));
-                                    }
-
-                                    @Override
-                                    public void onLoadCleared(@Nullable Drawable placeholder) {
-
-                                    }
-                                });
-                    } else {
+                setImageInBanner(bannerImageUrl, position, holder);
 
 
-                        Glide.with(mContext).asBitmap().load(bannerImageUrl).into(new CustomTarget<Bitmap>() {
-                            @Override
-                            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
-                                CustomerGlu.cgrxBus.postEvent(new CGBannerDismissShimmerEvent(true));
-                                holder.mImage.setImageBitmap(resource);
-                            }
-
-                            @Override
-                            public void onLoadCleared(@Nullable Drawable placeholder) {
-                            }
-                        });
-                    }
-                    boolean isUrlValiadte = false;
-
-                    if (contentList.get(position).getCampaignId() != null && !contentList.get(position).getCampaignId().isEmpty()) {
-                        isUrlValiadte = Comman.isValidURL(contentList.get(position).getCampaignId());
-                    }
-
-                    Map<String, Object> nudgeData = new HashMap<>();
-                    Map<String, Object> entry_point_content = new HashMap<>();
-                    entry_point_content.put("type", "STATIC");
-                    entry_point_content.put("campaign_id", "");
-                    if (entryPointsModel.getName() != null) {
-                        nudgeData.put("entry_point_name", entryPointsModel.getName());
-
-                    } else {
-                        nudgeData.put("entry_point_name", "");
-                    }
-                    entry_point_content.put("static_url", bannerImageUrl);
-                    nudgeData.put("entry_point_id", contentList.get(position).get_id());
-                    nudgeData.put("entry_point_location", screenName);
-                    nudgeData.put("entry_point_content", entry_point_content);
-                    nudgeData.put("entry_point_container", "BANNER");
-                    CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_LOAD, nudgeData);
-                    //  CustomerGlu.getInstance().sendAnalyticsEvent(mContext, contentList.get(position).get_id(), "BANNER", screenName, "LOADED", "CUSTOM_URL", contentList.get(position).getOpenLayout());
-
-                } else {
-                    holder.mImage.setVisibility(GONE);
-                    holder.my_button.setVisibility(View.VISIBLE);
-                    holder.webView.setVisibility(View.VISIBLE);
-
-                    holder.webView.getSettings().setJavaScriptEnabled(true);
-                    holder.webView.setInitialScale(1);
-                    holder.webView.getSettings().setLoadWithOverviewMode(true);
-                    holder.webView.getSettings().setUseWideViewPort(true);
-                    holder.webView.setOnTouchListener(new View.OnTouchListener() {
-                        @SuppressLint("ClickableViewAccessibility")
-                        @Override
-                        public boolean onTouch(View v, MotionEvent event) {
-                            return (event.getAction() == MotionEvent.ACTION_MOVE);
-                        }
-                    });
-                    holder.webView.loadUrl(bannerImageUrl);
-                    Map<String, Object> nudgeData = new HashMap<>();
-                    Map<String, Object> entry_point_content = new HashMap<>();
-                    entry_point_content.put("type", "STATIC");
-                    entry_point_content.put("campaign_id", "");
-                    if (entryPointsModel.getName() != null) {
-                        nudgeData.put("entry_point_name", entryPointsModel.getName());
-
-                    } else {
-                        nudgeData.put("entry_point_name", "");
-                    }
-                    entry_point_content.put("static_url", bannerImageUrl);
-                    nudgeData.put("entry_point_id", contentList.get(position).get_id());
-                    nudgeData.put("entry_point_location", screenName);
-                    nudgeData.put("entry_point_content", entry_point_content);
-                    nudgeData.put("entry_point_container", "BANNER");
-                    CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_LOAD, nudgeData);
-                    //  CustomerGlu.getInstance().sendAnalyticsEvent(mContext, contentList.get(position).get_id(), "BANNER", screenName, "LOADED", contentList.get(position).getCampaignId(), contentList.get(position).getOpenLayout());
-
-
-                }
             }
             holder.cardView.getBackground().setAlpha(0);
 
             holder.mImage.setOnClickListener(new View.OnClickListener() {
+                String campaignId = "";
 
                 @Override
                 public void onClick(View view) {
                     if (data != null && data.getCampaignId() != null) {
+                        campaignId = data.getCampaignId();
                         Prefs.putEncKey(mContext, "OPEN_LAYOUT", data.getOpenLayout());
                         if (data.getOpenLayout() != null) {
                             open_layout = data.getOpenLayout();
@@ -232,7 +137,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                             Map<String, Object> entry_point_action = new HashMap<>();
                             Map<String, Object> open_content = new HashMap<>();
                             open_content.put("type", "STATIC");
-                            open_content.put("campaign_id", "");
+                            open_content.put("campaign_id", campaignId);
                             if (entryPointsModel.getName() != null) {
                                 nudgeData.put("entry_point_name", entryPointsModel.getName());
 
@@ -263,7 +168,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                             nudgeData.put("entry_point_content", entry_point_content);
                             nudgeData.put("entry_point_action", entry_point_action);
                             nudgeData.put("entry_point_container", "BANNER");
-                            CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_CLICK, nudgeData);
+                            CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_CLICK, campaignId, nudgeData);
 
                             //   CustomerGlu.getInstance().sendAnalyticsEvent(mContext, contentList.get(position).get_id(), "BANNER", screenName, "OPEN", "CUSTOM_URL", contentList.get(position).getOpenLayout());
 
@@ -308,7 +213,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                             nudgeData.put("entry_point_content", entry_point_content);
                             nudgeData.put("entry_point_action", entry_point_action);
                             nudgeData.put("entry_point_container", "BANNER");
-                            CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_CLICK, nudgeData);
+                            CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_CLICK, campaignId, nudgeData);
                             //  CustomerGlu.getInstance().sendAnalyticsEvent(mContext, contentList.get(position).get_id(), "BANNER", screenName, "OPEN", contentList.get(position).getCampaignId(), contentList.get(position).getOpenLayout());
                         }
                         if (contentList.get(position).isCloseOnDeepLink() != null) {
@@ -350,7 +255,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
                                     break;
                                 case OPEN_WEBLINK:
                                     if (contentList.get(position).getAction().getUrl() != null && !contentList.get(position).getAction().getUrl().isEmpty()) {
-                                        CustomerGlu.getInstance().displayCGNudge(mContext, contentList.get(position).getAction().getUrl(), nudgeConfiguration);
+                                        CustomerGlu.getInstance().displayCGNudge(mContext, contentList.get(position).getAction().getUrl(), "", nudgeConfiguration);
                                     }
                                     break;
                                 case OPEN_WALLET:
@@ -370,6 +275,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
 
                 @Override
                 public void onClick(View view) {
+
                     if (data != null && data.getCampaignId() != null) {
                         Prefs.putEncKey(mContext, "OPEN_LAYOUT", data.getOpenLayout());
                         if (data.getOpenLayout() != null) {
@@ -414,10 +320,66 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
 
     }
 
-    private void openWeblink(Context mContext, NudgeConfiguration nudgeConfiguration) {
+    private void setImageInBanner(String bannerImageUrl, int position, UnderShop holder) {
+        String campaignId = "";
+        holder.mImage.setVisibility(View.VISIBLE);
+        if (bannerImageUrl.contains(".gif") || bannerImageUrl.contains(".Gif")) {
+
+            Glide.with(mContext)
+                    .asGif()
+                    .load(bannerImageUrl)
+                    .into(new CustomTarget<GifDrawable>() {
+                        @Override
+                        public void onResourceReady(@NonNull GifDrawable resource, @Nullable Transition<? super GifDrawable> transition) {
+                            holder.mImage.setImageDrawable(resource);
+                            CustomerGlu.cgrxBus.postEvent(new CGBannerDismissShimmerEvent(true));
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+
+                        }
+                    });
+        } else {
 
 
+            Glide.with(mContext).asBitmap().load(bannerImageUrl).into(new CustomTarget<Bitmap>() {
+                @Override
+                public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                    CustomerGlu.cgrxBus.postEvent(new CGBannerDismissShimmerEvent(true));
+                    holder.mImage.setImageBitmap(resource);
+                }
+
+                @Override
+                public void onLoadCleared(@Nullable Drawable placeholder) {
+                }
+            });
+        }
+        boolean isUrlValiadte = false;
+
+        if (contentList.get(position).getCampaignId() != null && !contentList.get(position).getCampaignId().isEmpty()) {
+            campaignId = contentList.get(position).getCampaignId();
+            isUrlValiadte = Comman.isValidURL(contentList.get(position).getCampaignId());
+        }
+
+        Map<String, Object> nudgeData = new HashMap<>();
+        Map<String, Object> entry_point_content = new HashMap<>();
+        entry_point_content.put("type", "STATIC");
+        entry_point_content.put("campaign_id", campaignId);
+        if (entryPointsModel.getName() != null) {
+            nudgeData.put("entry_point_name", entryPointsModel.getName());
+
+        } else {
+            nudgeData.put("entry_point_name", "");
+        }
+        entry_point_content.put("static_url", bannerImageUrl);
+        nudgeData.put("entry_point_id", contentList.get(position).get_id());
+        nudgeData.put("entry_point_location", screenName);
+        nudgeData.put("entry_point_content", entry_point_content);
+        nudgeData.put("entry_point_container", "BANNER");
+        CustomerGlu.getInstance().cgAnalyticsEventManager(mContext, ENTRY_POINT_LOAD, campaignId, nudgeData);
     }
+
 
     @Override
     public int getItemCount() {
@@ -427,7 +389,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
     public class UnderShop extends RecyclerView.ViewHolder {
 
         ImageView mImage;
-        WebView webView;
+        //  WebView webView;
         RelativeLayout cardView;
         Button my_button;
 
@@ -435,7 +397,7 @@ public class ImageBannerAdapter extends RecyclerView.Adapter<ImageBannerAdapter.
         public UnderShop(@NonNull View itemView) {
             super(itemView);
             cardView = itemView.findViewById(R.id.Rcard);
-            webView = itemView.findViewById(R.id.web);
+            //    webView = itemView.findViewById(R.id.web);
             my_button = itemView.findViewById(R.id.my_button);
             //  Log.e("CustomerGlu", "height " + ViewGroup.LayoutParams.MATCH_PARENT);
             cardView.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;

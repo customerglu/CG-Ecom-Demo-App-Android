@@ -1,28 +1,33 @@
 package com.customerglu.sdk.entrypoints;
 
-import static android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM;
-import static android.widget.RelativeLayout.ALIGN_PARENT_RIGHT;
-import static android.widget.RelativeLayout.CENTER_IN_PARENT;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Point;
+import android.os.Build;
 import android.os.Handler;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-import androidx.annotation.Nullable;
-
-import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.MovieView;
 import com.customerglu.sdk.R;
+
+import androidx.annotation.Nullable;
+
+import static android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM;
+import static android.widget.RelativeLayout.ALIGN_PARENT_RIGHT;
+import static android.widget.RelativeLayout.CENTER_IN_PARENT;
 
 public class PictureInPicture extends View implements View.OnTouchListener, View.OnClickListener {
     private final static float CLICK_DRAG_TOLERANCE = 20; // Often, there will be a slight, unintentional, drag when the user taps the FAB, so we need to account for this.
@@ -34,7 +39,7 @@ public class PictureInPicture extends View implements View.OnTouchListener, View
     int curntPositionX = 0, curntPositionY = 0;
     RelativeLayout rootContainer;
     RelativeLayout pipControls;
-    private MediaSessionCompat mSession= null;
+    private MediaSessionCompat mSession = null;
     private String TAG = PictureInPicture.class.getSimpleName();
 
     @Override
@@ -42,10 +47,12 @@ public class PictureInPicture extends View implements View.OnTouchListener, View
         int id = v.getId();
 
         if (id == R.id.expand_view) {
-            CustomerGlu.getInstance().openWallet(context);
+            Intent intent = new Intent(context,CGPiPFullScreenActivity.class);
+            context.startActivity(intent);
+
         } else if (id == R.id.close_view) {
             rootContainer.setVisibility(GONE);
-            if(movieView.isPlaying()){
+            if (movieView.isPlaying()) {
                 movieView.pause();
             }
         }
@@ -176,11 +183,10 @@ public class PictureInPicture extends View implements View.OnTouchListener, View
         mSession.setActive(true);
         MediaControllerCompat.setMediaController((Activity) context, mSession.getController());
 
-        MediaMetadataCompat metadata =new MediaMetadataCompat.Builder()
+        MediaMetadataCompat metadata = new MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, movieView.getTitle())
                 .build();
         mSession.setMetadata(metadata);
-
 
 
         movieView.play();
@@ -205,18 +211,43 @@ public class PictureInPicture extends View implements View.OnTouchListener, View
 
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint({"ClickableViewAccessibility", "UseCompatLoadingForDrawables"})
     private RelativeLayout addLayout() {
         rootContainer = new RelativeLayout(context);
 
-        rootContainer.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(405, 720);
+        rootContainer.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        Display display = windowManager.getDefaultDisplay();
+        Point size = new Point();
+
+        int widthSize = 0;
+        int heightSize = 0;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            windowManager.getDefaultDisplay().getSize(size);
+            widthSize = (int) (size.x * 0.45);
+            heightSize = size.y;
+        } else {
+
+            widthSize = (int) (display.getWidth() * 0.45);
+            heightSize = display.getHeight();
+        }
+
+        heightSize = (int) (1.78 * widthSize);
+
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(widthSize, heightSize);
         layoutParams.addRule(ALIGN_PARENT_BOTTOM);
         layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
         layoutParams.setMargins(10, 0, 0, 20);
 
+
         movieView = new MovieView(context, null);
         movieView.setId(R.id.movie_view);
+        movieView.setBackground(context.getDrawable(R.drawable.movie_view_bg));
+        movieView.setClipToOutline(true);
+
         ImageView expandView = addViewIcon(PiPCTAType.PIP_OPEN_CTA);
         expandView.setClickable(true);
         expandView.setId(R.id.expand_view);
@@ -255,6 +286,7 @@ public class PictureInPicture extends View implements View.OnTouchListener, View
                 imageView.setLayoutParams(layoutParams);
                 break;
             case PIP_OPEN_CTA:
+                layoutParams = new RelativeLayout.LayoutParams(96, 96);
                 layoutParams.addRule(CENTER_IN_PARENT, RelativeLayout.TRUE);
                 imageView.setImageResource(R.drawable.ic_expand);
                 imageView.setLayoutParams(layoutParams);
@@ -262,8 +294,6 @@ public class PictureInPicture extends View implements View.OnTouchListener, View
         }
         return imageView;
     }
-
-
 
 
 }

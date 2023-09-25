@@ -53,12 +53,26 @@ public class CGConstants {
         ADVANCED
     }
 
+    // EUI callback
+
+    public static final String PRE_LOAD_URL = "https://constellation.customerglu.com/preload";
+    public static final String SDK_CALLBACK = "sdkCallback";
+    public static final String REQUEST_API_DATA = "REQUEST_API_DATA";
+    public static final String REQUEST_API_RESULT = "REQUEST_API_RESULT";
+    public static final String REFRESH_API_DATA = "REFRESH_API_DATA";
+    public static final String REFRESH_API_DATA_RESULT = "REFRESH_API_DATA_RESULT";
+    public static final String LOAD_CAMPAIGNS_RESPONSE = "LOAD_CAMPAIGNS_RESPONSE";
+    public static final String CAMPAIGN_ID_STRING = "CAMPAIGN_ID_STRING";
+    public static final String PROGRAM_DATA = "PROGRAM_DATA";
+    public static final String REWARD_DATA = "REWARD_DATA";
+
     // Client Test Page Constants
     public static final int headingViewType = 0;
     public static final int subHeadingViewType = 1;
     public static final int valueViewType = 2;
 
 
+    public static final String SSL_CERTIFICATE_STRING = "SSL_CERTIFICATE_STRING";
     public static final String SDK_INITIALISED = "SDK Initialised";
     public static final String USER_REGISTERED = "User Registered";
     public static final String CALLBACK_HANDLING = "Callback Handling";
@@ -77,7 +91,7 @@ public class CGConstants {
     public static final String CG_PLATFORM_VALUE = "android-native-sdk";
     public static final String CG_PLATFORM_KEY = "cg-app-platform";
     public static final String CG_SDK_VERSION_KEY = "cg-sdk-version";
-    public static final String CG_SDK_VERSION_VAL = "2.3.10";
+    public static final String CG_SDK_VERSION_VAL = "2.3.14";
     public static final String MQTT_SERVER_HOST = "hermes.customerglu.com";
     public static final String DEV_MQTT_SERVER_HOST = "dev-hermes.customerglu.com";
 
@@ -243,6 +257,5 @@ public class CGConstants {
             "}";
     public static final String URL_REGEX = "[(http(s)?):\\/\\/(www\\.)?a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)";
     public static String register_response = "";
-    public static String load_campaign_response = "";
 
 }

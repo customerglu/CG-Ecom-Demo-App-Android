@@ -2,8 +2,39 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.customerglu.sdk">
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application>
+        <activity
+            android:name=".entrypoints.CGPiPFullScreenActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".notification.NotificationWeb"
+            android:exported="false"
+            android:protectionLevel="signature"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="OPEN_WEB" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".notification.BottomSheet"
+            android:theme="@style/Theme.Transparent"></activity>
+
+        <activity
+            android:name=".notification.BottomDialog"
+            android:theme="@style/Theme.Transparent"></activity>
+        <activity
+            android:name=".notification.MiddleDialog"
+            android:theme="@style/Theme.Transparent"></activity>
+        <activity
+            android:name=".clienttesting.ClientTestingPage"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".MediaSessionPlaybackActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            android:supportsPictureInPicture="true" />
         <meta-data
             android:name="io.sentry.auto-init"
             android:value="false" />
@@ -11,63 +42,17 @@
             android:name="io.sentry.dsn"
             android:value="https://examplePublicKey@o0.ingest.sentry.io/0" />
 
-        <activity
-            android:name="com.customerglu.sdk.Web.OpenCustomerGluWeb"
-            android:theme="@style/AppTheme" />
-
-        <activity
-            android:name="com.customerglu.sdk.notification.NotificationWeb"
-            android:exported="false"
-            android:protectionLevel="signature"
-            android:theme="@style/AppTheme">
-            <intent-filter>
-                <action android:name="OPEN_WEB" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-
-
-        </activity>
-        <activity
-            android:name="com.customerglu.sdk.notification.BottomSheet"
-            android:theme="@style/Theme.Transparent">
-
-        </activity>
-        <activity
-            android:name="com.customerglu.sdk.notification.BottomDialog"
-            android:theme="@style/Theme.Transparent">
-
-        </activity>
-        <activity
-            android:name="com.customerglu.sdk.notification.MiddleDialog"
-            android:theme="@style/Theme.Transparent">
-
-        </activity>
-        <activity
-            android:name="com.customerglu.sdk.Screens.RewardScreen"
-            android:theme="@style/Theme.Transparent">
-
-        </activity>
-        <activity
-            android:name="com.customerglu.sdk.Web.RewardWeb"
-            android:theme="@style/Theme.Transparent" />
-        <activity
-            android:name="com.customerglu.sdk.Web.FilterReward"
-            android:theme="@style/Theme.Transparent" />
-        <activity
-            android:name=".clienttesting.ClientTestingPage"
-            android:theme="@style/AppTheme" />
-
         <provider
             android:name=".Utils.CGFileProvider"
             android:authorities="${applicationId}.Utils.CGFileProvider"
             android:exported="false"
             android:grantUriPermissions="true">
-
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/cg_provider_path" />
-
         </provider>
-
     </application>
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
 </manifest>

@@ -52,14 +52,16 @@ public class CGConfigData {
         Boolean enableMqtt;
         Boolean allowAnonymousRegistration;
         Integer allowedRetryCount;
+        Boolean enableSslPinning;
+        Boolean allowProxy;
+        String sslCertificate;
 
-        public CGMobileConfig(Boolean disableSdk, Integer allowedRetryCount, Boolean allowAnonymousRegistration, Boolean enableAnalytics, Boolean enableEntryPoints, Boolean allowUserRegistration, Boolean enableSentry, Boolean enableMqtt, Boolean forceUserRegistration, Boolean enableDarkMode, Boolean listenToSystemDarkLightMode, Boolean isDiagnosticsEnabled, Boolean isMetricsEnabled, Boolean isCrashLoggingEnabled, String loaderColor, String lightBackground, String darkBackground, String secretKey, String loadScreenColor, String androidStatusBarColor, String androidStatusBarLightColor, String androidStatusBarDarkColor, String errorMessageForDomain, String callbackConfigurationUrl, String deeplinkUrl, LoaderConfig loaderConfig, SentryDsn sentryDsn, PlatformList activityIdList, PlatformList bannerIds, PlatformList embedIds, Integer errorCodeForDomain, ArrayList<String> whiteListedDomains, ArrayList<String> testUserIds, ArrayList<String> mqttEnabledComponents) {
+        public CGMobileConfig(Boolean disableSdk, Boolean enableAnalytics, Boolean enableEntryPoints, Boolean allowUserRegistration, Boolean enableSentry, Boolean forceUserRegistration, Boolean enableDarkMode, Boolean listenToSystemDarkLightMode, Boolean isDiagnosticsEnabled, Boolean isMetricsEnabled, Boolean isCrashLoggingEnabled, String loaderColor, String lightBackground, String darkBackground, String secretKey, String loadScreenColor, String androidStatusBarColor, String androidStatusBarLightColor, String androidStatusBarDarkColor, String errorMessageForDomain, String callbackConfigurationUrl, String deeplinkUrl, LoaderConfig loaderConfig, SentryDsn sentryDsn, PlatformList activityIdList, PlatformList bannerIds, PlatformList embedIds, Integer errorCodeForDomain, ArrayList<String> whiteListedDomains, ArrayList<String> testUserIds, ArrayList<String> mqttEnabledComponents, Boolean enableMqtt, Boolean allowAnonymousRegistration, Integer allowedRetryCount, Boolean enableSslPinning, Boolean allowProxy, String sslCertificate) {
             this.disableSdk = disableSdk;
             this.enableAnalytics = enableAnalytics;
             this.enableEntryPoints = enableEntryPoints;
             this.allowUserRegistration = allowUserRegistration;
             this.enableSentry = enableSentry;
-            this.enableMqtt = enableMqtt;
             this.forceUserRegistration = forceUserRegistration;
             this.enableDarkMode = enableDarkMode;
             this.listenToSystemDarkLightMode = listenToSystemDarkLightMode;
@@ -80,15 +82,44 @@ public class CGConfigData {
             this.loaderConfig = loaderConfig;
             this.sentryDsn = sentryDsn;
             this.activityIdList = activityIdList;
-            this.allowAnonymousRegistration = allowAnonymousRegistration;
             this.bannerIds = bannerIds;
             this.embedIds = embedIds;
             this.errorCodeForDomain = errorCodeForDomain;
             this.whiteListedDomains = whiteListedDomains;
             this.testUserIds = testUserIds;
             this.mqttEnabledComponents = mqttEnabledComponents;
+            this.enableMqtt = enableMqtt;
+            this.allowAnonymousRegistration = allowAnonymousRegistration;
             this.allowedRetryCount = allowedRetryCount;
+            this.enableSslPinning = enableSslPinning;
+            this.allowProxy = allowProxy;
+            this.sslCertificate = sslCertificate;
         }
+
+        public Boolean getEnableSslPinning() {
+            return enableSslPinning;
+        }
+
+        public void setEnableSslPinning(Boolean enableSslPinning) {
+            this.enableSslPinning = enableSslPinning;
+        }
+
+        public Boolean getAllowProxy() {
+            return allowProxy;
+        }
+
+        public void setAllowProxy(Boolean allowProxy) {
+            this.allowProxy = allowProxy;
+        }
+
+        public String getSslCertificate() {
+            return sslCertificate;
+        }
+
+        public void setSslCertificate(String sslCertificate) {
+            this.sslCertificate = sslCertificate;
+        }
+        
 
         public ArrayList<String> getMqttEnabledComponents() {
             return mqttEnabledComponents;

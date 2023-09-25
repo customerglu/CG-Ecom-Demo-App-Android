@@ -9,6 +9,7 @@ import com.customerglu.sdk.Modal.ConfigurationData;
 import com.customerglu.sdk.Modal.DeepLinkWormholeModel;
 import com.customerglu.sdk.Modal.EntryPointsModel;
 import com.customerglu.sdk.Modal.EventData;
+import com.customerglu.sdk.Modal.ProgramFilterModel;
 import com.customerglu.sdk.Modal.RegisterModal;
 import com.customerglu.sdk.Modal.RewardModel;
 import com.customerglu.sdk.Modal.ScreenListModal;
@@ -114,6 +115,25 @@ public interface ApiInterface {
     Call<ClientTestNotificationModel> postClientTestingData(
             @Header("x-api-key") String writeKey,
             @Body ClientTestPostDataModel clientTestPostDataModel);
+
+    @GET
+    Call<String> readSSLCertificate(
+            @Url String url);
+
+
+    //FE API
+
+    @POST("/reward/v2/user/program")
+    Call<JsonObject> getPrograms(
+            @Header("Authorization") String token,
+            @Body ProgramFilterModel data
+    );
+
+    @POST("/reward/v2/user/reward")
+    Call<JsonObject> getRewards(
+            @Header("Authorization") String token,
+            @Body ProgramFilterModel data
+    );
 
 
 }

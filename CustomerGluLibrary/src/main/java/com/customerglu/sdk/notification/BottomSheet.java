@@ -60,6 +60,7 @@ public class BottomSheet extends BaseActivity {
     String darkMode = "darkMode=false";
     ProgressLottieView progressLottieView;
     BottomSheetDialog dialog;
+    String campaignId = "";
 
     @Override
     public void onAttachedToWindow() {
@@ -129,6 +130,9 @@ public class BottomSheet extends BaseActivity {
         if (CustomerGlu.isDarkModeEnabled(getApplicationContext())) {
             darkMode = "darkMode=true";
         }
+        if (getIntent().getStringExtra("campaignId") != null) {
+            campaignId = getIntent().getStringExtra("campaignId");
+        }
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
 
             @Override
@@ -153,7 +157,11 @@ public class BottomSheet extends BaseActivity {
                 nudgeData.put("nudge_id", jsonObject.getString("nudge_id"));
                 nudgeData.put("click_action", jsonObject.getString("click_action"));
                 nudgeData.put("campaign_id", jsonObject.getString("campaign_id"));
-                CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, nudgeData);
+                if (jsonObject.has("campaign_id") && !jsonObject.getString("campaign_id").isEmpty()) {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, jsonObject.getString("campaign_id"), nudgeData);
+                } else {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, "", nudgeData);
+                }
             }
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
@@ -202,6 +210,7 @@ public class BottomSheet extends BaseActivity {
                 finalData.put("relative_height", "100");
 
             }
+            finalData.put("campaignId", campaignId);
             finalData.put("webview_layout", CGConstants.BOTTOM_SHEET_NOTIFICATION);
             findViews();
         } catch (Exception e) {
@@ -229,7 +238,7 @@ public class BottomSheet extends BaseActivity {
         printDebugLogs(" Activity Destroyed");
         finalData.put("webview_url", final_url);
 
-        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, finalData);
+        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
         super.onDestroy();
 
         if (dialog != null && dialog.isShowing()) {
@@ -315,7 +324,7 @@ public class BottomSheet extends BaseActivity {
         }
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
-        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
+        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData, this));
         webView.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING);
         webView.addJavascriptInterface(new WebViewJavaScriptInterface(getApplicationContext(), this, closeOnDeepLink), "app"); // **IMPORTANT** call it app
         webView.setInitialScale(1);

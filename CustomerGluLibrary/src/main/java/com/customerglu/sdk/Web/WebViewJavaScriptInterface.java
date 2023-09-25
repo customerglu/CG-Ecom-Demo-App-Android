@@ -2,13 +2,13 @@ package com.customerglu.sdk.Web;
 
 
 import static com.customerglu.sdk.CustomerGlu.doLoadCampaignAndEntryPointCall;
+import static com.customerglu.sdk.CustomerGlu.euiCallbackHandler;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_CTA_CALLBACK;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
 import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -18,7 +18,9 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcelable;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,8 +50,9 @@ public class WebViewJavaScriptInterface {
     private boolean closeOnDeeplink = true;
     List imageUrls;
     List imageUriList;
+    WebView webView;
     String text = "", image = "", channelName = "OTHERS";
-    ProgressDialog progressDialog;
+    //ProgressDialog progressDialog;
 
     /*
      * Need a reference to the context in order to sent a post message
@@ -59,6 +62,14 @@ public class WebViewJavaScriptInterface {
         this.activity = activity;
         this.closeOnDeeplink = closeOnDeeplink;
     }
+
+    public WebViewJavaScriptInterface(Context context, Activity activity, boolean closeOnDeeplink, WebView webView) {
+        this.context = context;
+        this.activity = activity;
+        this.closeOnDeeplink = closeOnDeeplink;
+        this.webView = webView;
+    }
+
 
     @JavascriptInterface
     public void callback(String message) {
@@ -81,6 +92,24 @@ public class WebViewJavaScriptInterface {
                 activity.finish();
 
             }
+            if (event.equalsIgnoreCase("REQUEST_API_DATA")) {
+                if (CustomerGlu.euiProxyEnabled) {
+
+                    CustomerGlu.euiCallbackHandler.callJavaScriptFunction(webView, data);
+                }
+
+            }
+            if (event.equalsIgnoreCase("REFRESH_API_DATA")) {
+                if (CustomerGlu.euiProxyEnabled) {
+
+                    euiCallbackHandler.getProgramData();
+                    euiCallbackHandler.getRewardData();
+
+                    euiCallbackHandler.callJavaScriptFunction(webView, data);
+                }
+
+            }
+
             if (event.equalsIgnoreCase("HIDE_LOADER")) {
                 printDebugLogs("HIDE_LOADER");
                 Intent intent = new Intent("HIDE_LOADER");
@@ -141,7 +170,7 @@ public class WebViewJavaScriptInterface {
                 } else if (type.equalsIgnoreCase("CAMPAIGN")) {
                     CustomerGlu.getInstance().loadCampaignById(context, campaignId, nudgeConfiguration);
                 } else {
-                    CustomerGlu.getInstance().displayCGNudge(context, url, nudgeConfiguration);
+                    CustomerGlu.getInstance().displayCGNudge(context, url, "", nudgeConfiguration);
                 }
 
                 if (closeOnDeeplink) {
@@ -203,6 +232,9 @@ public class WebViewJavaScriptInterface {
                 JSONObject me = data.getJSONObject("data");
                 printDebugLogs(me.toString());
                 text = me.getString("text");
+                if (!text.isEmpty()) {
+                    text = text.replace("\\n", "\n");
+                }
                 if (me.has("channelName")) {
                     channelName = me.getString("channelName");
                 }
@@ -213,10 +245,10 @@ public class WebViewJavaScriptInterface {
 
                 imageUrls = new ArrayList<>();
                 imageUriList = new ArrayList<>();
-                progressDialog = new ProgressDialog(activity);
-                progressDialog.setMessage("Please wait");
-                progressDialog.setCancelable(false);
-                progressDialog.show();
+//                progressDialog = new ProgressDialog(activity);
+//                progressDialog.setMessage("Please wait");
+//                progressDialog.setCancelable(false);
+//                progressDialog.show();
 
                 if (image.equalsIgnoreCase("")) {
                     if (channelName.equalsIgnoreCase("WHATSAPP")) {
@@ -226,7 +258,7 @@ public class WebViewJavaScriptInterface {
                     }
 
                 } else {
-                    //Handler
+
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -242,10 +274,10 @@ public class WebViewJavaScriptInterface {
 
                     }, 500);
                 }
-//                if (closeOnDeeplink) {
-//                    Log.e("Cust", "Webview closed");
-//                    activity.finish();
-//                }
+                if (closeOnDeeplink) {
+                    Log.e("Cust", "Webview closed");
+                    activity.finish();
+                }
             }
 
         } catch (JSONException e) {
@@ -263,7 +295,7 @@ public class WebViewJavaScriptInterface {
 
     @SuppressLint("QueryPermissionsNeeded")
     private void sendToOtherApps() {
-        progressDialog.dismiss();
+        //  progressDialog.dismiss();
         Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
                 .setType("text/plain")
                 .setChooserTitle("Share")
@@ -275,7 +307,7 @@ public class WebViewJavaScriptInterface {
     }
 
     private void sendToWhatsapp() {
-        progressDialog.dismiss();
+        //    progressDialog.dismiss();
         Intent intent = new Intent();
         intent.setPackage("com.whatsapp");
         intent.setAction(Intent.ACTION_SEND_MULTIPLE);
@@ -327,7 +359,7 @@ public class WebViewJavaScriptInterface {
         Intent shareIntent = null;
         try {
             shareIntent = ShareCompat.IntentBuilder.from(activity)
-                    .setType("text/plain")
+                    .setType("image/*")
                     .setChooserTitle("Share")
                     .setText(text)
                     .setStream(getLocalBitmapUri(context, bitmap))
@@ -370,7 +402,7 @@ public class WebViewJavaScriptInterface {
         //    intent.putExtra(Intent.EXTRA_STREAM,imageUriList);
 //        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 //        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setType("image/png");
+        intent.setType("image/*");
         intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, (ArrayList<? extends Parcelable>) imageUriList);
 //        context.startActivity(Intent.createChooser(intent,"share Image"));
         activity.startActivity(Intent.createChooser(intent, "share Image"));

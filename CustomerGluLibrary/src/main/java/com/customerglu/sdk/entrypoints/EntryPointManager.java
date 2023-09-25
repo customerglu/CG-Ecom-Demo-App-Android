@@ -90,8 +90,6 @@ public class EntryPointManager extends View {
         super(context);
 
         this.context = context;
-
-
         screenName = context.getClass().getCanonicalName();
         printDebugLogs(screenName);
         init();
@@ -113,8 +111,6 @@ public class EntryPointManager extends View {
         super(context);
 
         this.context = context;
-
-
         screenName = currentScreenName;
         printDebugLogs(screenName);
         init();
@@ -131,28 +127,32 @@ public class EntryPointManager extends View {
 
     // Setup views
     private void init() {
-        broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                printDebugLogs("==================Recieved============");
-                if (intent.getAction().equalsIgnoreCase("CUSTOMERGLU_ENTRY_POINT_DATA")) {
-                    if (!isLoaded) {
-                        getEntryPointData();
+        if (broadcastReceiver == null) {
+            broadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    printDebugLogs("==================Recieved============");
+                    if (intent.getAction().equalsIgnoreCase("CUSTOMERGLU_ENTRY_POINT_DATA")) {
+                        if (!isLoaded) {
+                            getEntryPointData();
+                        }
                     }
                 }
+            };
+        }
+        if (context != null) {
+            context.registerReceiver(broadcastReceiver, new IntentFilter("CUSTOMERGLU_ENTRY_POINT_DATA"));
+
+            this.setId(R.id.web);
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            screenHeight = displayMetrics.heightPixels;
+            screenWidth = displayMetrics.widthPixels;
+
+            if (CustomerGlu.isBannerEntryPointsEnabled && CustomerGlu.isBannerEntryPointsHasData) {
+
+                getEntryPointData();
             }
-        };
-        context.registerReceiver(broadcastReceiver, new IntentFilter("CUSTOMERGLU_ENTRY_POINT_DATA"));
-
-        this.setId(R.id.web);
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        screenHeight = displayMetrics.heightPixels;
-        screenWidth = displayMetrics.widthPixels;
-
-        if (CustomerGlu.isBannerEntryPointsEnabled && CustomerGlu.isBannerEntryPointsHasData) {
-
-            getEntryPointData();
         }
 
     }
@@ -540,6 +540,7 @@ public class EntryPointManager extends View {
                         isUrlValiadte = Comman.isValidURL(entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId());
                     }
                     if (isUrlValiadte) {
+
                         //    CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", "CUSTOM_URL", entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
                     } else {
                         //  CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
@@ -588,7 +589,7 @@ public class EntryPointManager extends View {
                                 nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
                                 nudgeConfiguration.setHyperlink(true);
                                 if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
-                                    CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
+                                    CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), "", nudgeConfiguration);
                                 }
                                 break;
 
@@ -609,78 +610,7 @@ public class EntryPointManager extends View {
 
 
         // Floating Banner container
-        String position = entryPointsDataList.get(i).getMobileData().getContainer().getPosition();
-        //    printErrorLogs("CustomerGlu", position);
-        int height = (screenHeight / 100) * Integer.parseInt(entryPointsDataList.get(i).getMobileData().getContainer().getHeight());
-        int width = (screenWidth / 100) * Integer.parseInt(entryPointsDataList.get(i).getMobileData().getContainer().getWidth());
-
-        if (position.equalsIgnoreCase("BOTTOM-LEFT")) {
-            //   printErrorLogs("CustomerGlu", "BOTTOM-LEFT");
-
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(ALIGN_PARENT_BOTTOM);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
-            layoutParams.setMargins(10, 0, 0, screenHeight / 20);
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("BOTTOM-CENTER")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(ALIGN_PARENT_BOTTOM);
-            layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-            layoutParams.setMargins(0, 0, 0, screenHeight / 20);
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("TOP-LEFT")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
-            layoutParams.setMargins(0, 0, 10, screenHeight / 20);
-
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("TOP-CENTER")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-            layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-            layoutParams.setMargins(0, screenHeight / 20, 0, 0);
-
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("TOP-RIGHT")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
-            layoutParams.setMargins(0, screenHeight / 20, 10, 0);
-
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("MIDDLE-RIGHT")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("MIDDLE-LEFT")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else if (position.equalsIgnoreCase("MIDDLE-CENTER")) {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
-            layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        } else {
-            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
-            layoutParams.addRule(ALIGN_PARENT_BOTTOM);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
-            layoutParams.setMargins(0, 0, 10, screenHeight / 20);
-            cardView.setLayoutParams(layoutParams);
-            lContainerLayout.addView(cardView);
-        }
-
+        setFloatingButtonPosition(cardView, i);
 
         // Floating banner content
         if (entryPointsDataList.get(i).getMobileData().getContent() != null && entryPointsDataList.get(i).getMobileData().getContent().size() > 0) {
@@ -713,7 +643,6 @@ public class EntryPointManager extends View {
             //  main.setVisibility(VISIBLE);
 
         }
-
         if (isDraggable) {
             cardView.setOnTouchListener(new OnTouchListener() {
                 @Override
@@ -803,7 +732,7 @@ public class EntryPointManager extends View {
                                 dismissObject.put("entry_point_name", "");
                             }
                             dismissObject.put("entry_point_location", screenName);
-                            CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_DISMISS, dismissObject);
+                            CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_DISMISS, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), dismissObject);
                             //  removeMyView();
 
                         }
@@ -817,7 +746,8 @@ public class EntryPointManager extends View {
                         float upDX = upRawX - downRawX;
                         float upDY = upRawY - downRawY;
 
-                        if (Math.abs(upDX) < CLICK_DRAG_TOLERANCE && Math.abs(upDY) < CLICK_DRAG_TOLERANCE) { // A click
+                        if (Math.abs(upDX) < CLICK_DRAG_TOLERANCE && Math.abs(upDY) < CLICK_DRAG_TOLERANCE) {
+                            // A click
                             // Toast.makeText(context, "Clicked", Toast.LENGTH_SHORT).show();
                             boolean isUrlValiadte = false;
 
@@ -848,7 +778,7 @@ public class EntryPointManager extends View {
                                 nudgeData.put("entry_point_content", entry_point_content);
                                 nudgeData.put("entry_point_action", entry_point_action);
                                 nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_CLICK, nudgeData);
+                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_CLICK, "", nudgeData);
                                 //     CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", "CUSTOM_URL", entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
                             } else {
                                 Map<String, Object> nudgeData = new HashMap<>();
@@ -888,7 +818,7 @@ public class EntryPointManager extends View {
                                 nudgeData.put("entry_point_content", entry_point_content);
                                 nudgeData.put("entry_point_action", entry_point_action);
                                 nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_CLICK, nudgeData);
+                                CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_CLICK, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), nudgeData);
                                 //    CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "OPEN", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
                             }
                             printDebugLogs(open_layout);
@@ -937,7 +867,7 @@ public class EntryPointManager extends View {
                                         nudgeConfiguration.setOpacity(Double.parseDouble(opacity));
                                         nudgeConfiguration.setHyperlink(true);
                                         if (entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl() != null && !entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl().isEmpty()) {
-                                            CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), nudgeConfiguration);
+                                            CustomerGlu.getInstance().displayCGNudge(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).getAction().getUrl(), "", nudgeConfiguration);
                                         }
                                         break;
 
@@ -966,17 +896,13 @@ public class EntryPointManager extends View {
         }
 
 // Adding full screen container
-        MobileData mobileData = entryPointsDataList.get(i).getMobileData();
         boolean isUrlValiadte = false;
 
         if (image != null && !image.isEmpty()) {
-            isUrlValiadte = Comman.isValidURL(image);
-        }
-        if (isUrlValiadte) {
             Map<String, Object> nudgeData = new HashMap<>();
             Map<String, Object> entry_point_content = new HashMap<>();
             entry_point_content.put("type", "STATIC");
-            entry_point_content.put("campaign_id", "");
+            entry_point_content.put("campaign_id", entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId());
             entry_point_content.put("static_url", image);
             nudgeData.put("entry_point_id", entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id());
             nudgeData.put("entry_point_location", screenName);
@@ -987,10 +913,87 @@ public class EntryPointManager extends View {
             }
             nudgeData.put("entry_point_content", entry_point_content);
             nudgeData.put("entry_point_container", entryPointsDataList.get(i).getMobileData().getContainer().getType());
-            CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
-            //   CustomerGlu.getInstance().sendAnalyticsEvent(context, entryPointsDataList.get(i).getMobileData().getContent().get(0).get_id(), entryPointsDataList.get(i).getMobileData().getContainer().getType(), screenName, "LOADED", "CUSTOM_URL", entryPointsDataList.get(i).getMobileData().getContent().get(0).getOpenLayout());
+            CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, entryPointsDataList.get(i).getMobileData().getContent().get(0).getCampaignId(), nudgeData);
         }
+
         return lContainerLayout;
+    }
+
+
+    private void setFloatingButtonPosition(CardView cardView, int i) {
+        String position = entryPointsDataList.get(i).getMobileData().getContainer().getPosition();
+        //    printErrorLogs("CustomerGlu", position);
+        int height = (screenHeight / 100) * Integer.parseInt(entryPointsDataList.get(i).getMobileData().getContainer().getHeight());
+        int width = (screenWidth / 100) * Integer.parseInt(entryPointsDataList.get(i).getMobileData().getContainer().getWidth());
+
+        if (position.equalsIgnoreCase("BOTTOM-LEFT")) {
+            //   printErrorLogs("CustomerGlu", "BOTTOM-LEFT");
+
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+            layoutParams.setMargins(10, 0, 0, screenHeight / 20);
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("BOTTOM-CENTER")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+            layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+            layoutParams.setMargins(0, 0, 0, screenHeight / 20);
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("TOP-LEFT")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+            layoutParams.setMargins(0, 0, 10, screenHeight / 20);
+
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("TOP-CENTER")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+            layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+            layoutParams.setMargins(0, screenHeight / 20, 0, 0);
+
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("TOP-RIGHT")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+            layoutParams.setMargins(0, screenHeight / 20, 10, 0);
+
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("MIDDLE-RIGHT")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("MIDDLE-LEFT")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else if (position.equalsIgnoreCase("MIDDLE-CENTER")) {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
+            layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        } else {
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+            layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+            layoutParams.setMargins(0, 0, 10, screenHeight / 20);
+            cardView.setLayoutParams(layoutParams);
+            lContainerLayout.addView(cardView);
+        }
+
+
     }
 
     private boolean isViewOverlapping(View firstView, View secondView) {

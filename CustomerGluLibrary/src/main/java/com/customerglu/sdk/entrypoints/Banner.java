@@ -17,7 +17,6 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -46,7 +45,6 @@ import io.reactivex.functions.Consumer;
 public class Banner extends BaseRelativeLayout {
 
     public List<MobileData.Content> contentList = new ArrayList<>();
-    CardView card;
     int position = -1;
     RecyclerView recyclerView;
     ImageBannerAdapter bannerAdapter;
@@ -67,10 +65,6 @@ public class Banner extends BaseRelativeLayout {
     public Banner(Context context, String id) {
         super(context);
         this.context = context;
-        //  System.out.println("------------");
-//        id = this.getId();
-//        main = findViewById(id);
-//        main.setVisibility(GONE);
         System.out.println("------------");
         elementId = id;
         printDebugLogs(elementId);
@@ -129,26 +123,29 @@ public class Banner extends BaseRelativeLayout {
                 }
             }
         });
-
-        broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                printDebugLogs("==================Recieved============");
-                if (intent.getAction().equalsIgnoreCase("CUSTOMERGLU_ENTRY_POINT_DATA")) {
-                    if (!isLoaded) {
-                        getEntryPointData();
+        if (broadcastReceiver == null) {
+            broadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    printDebugLogs("==================Recieved============");
+                    if (intent.getAction().equalsIgnoreCase("CUSTOMERGLU_ENTRY_POINT_DATA")) {
+                        if (!isLoaded) {
+                            getEntryPointData();
+                        }
                     }
                 }
-            }
-        };
-        context.registerReceiver(broadcastReceiver, new IntentFilter("CUSTOMERGLU_ENTRY_POINT_DATA"));
+            };
+        }
+        if (context != null) {
+            context.registerReceiver(broadcastReceiver, new IntentFilter("CUSTOMERGLU_ENTRY_POINT_DATA"));
+        }
 
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (broadcastReceiver != null) {
+        if (broadcastReceiver != null && context != null) {
             context.unregisterReceiver(broadcastReceiver);
         }
     }

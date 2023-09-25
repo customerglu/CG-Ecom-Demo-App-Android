@@ -2,18 +2,6 @@ package com.customerglu.sdk.Utils;
 
 import android.content.Context;
 
-import com.customerglu.sdk.BuildConfig;
-import com.customerglu.sdk.CustomerGlu;
-import com.customerglu.sdk.Modal.MetaData;
-import com.google.gson.Gson;
-
-import java.util.ArrayList;
-
-import io.sentry.Sentry;
-import io.sentry.SentryLevel;
-import io.sentry.android.core.SentryAndroid;
-import io.sentry.protocol.User;
-
 public class SentryHelper {
     private static SentryHelper Instance;
 
@@ -26,7 +14,7 @@ public class SentryHelper {
     }
 
     public void initSentry(Context context, String dsn) {
-        if (CustomerGlu.getInstance().isSentryEnabled()) {
+     /*   if (CustomerGlu.getInstance().isSentryEnabled()) {
             try {
                 Gson gson = new Gson();
                 SentryAndroid.init(context, options -> {
@@ -51,7 +39,7 @@ public class SentryHelper {
             } catch (Exception e) {
 
             }
-        }
+        }*/
     }
 
     /**
@@ -59,12 +47,12 @@ public class SentryHelper {
      * @param clientId
      */
     public void setupUser(String userId, String clientId) {
-        if (CustomerGlu.getInstance().isSentryEnabled()) {
+     /*   if (CustomerGlu.getInstance().isSentryEnabled()) {
             User user = new User();
             user.setId(userId);
             user.setUsername(clientId);
             Sentry.setUser(user);
-        }
+        }*/
     }
 
 
@@ -72,12 +60,12 @@ public class SentryHelper {
      * Setup Sentry Context for more info.
      */
     public void setupSentryContext() {
-        if (CustomerGlu.getInstance().isSentryEnabled()) {
+       /* if (CustomerGlu.getInstance().isSentryEnabled()) {
             Sentry.configureScope(scope -> {
                 scope.setContexts(CGConstants.CG_PLATFORM_KEY, CGConstants.CG_PLATFORM_VALUE);
                 scope.setContexts(CGConstants.CG_SDK_VERSION_KEY, CGConstants.CG_SDK_VERSION_VAL);
             });
-        }
+        }*/
     }
 
 
@@ -85,9 +73,9 @@ public class SentryHelper {
      * Logout User from Sentry
      */
     public void logoutSentry() {
-        if (CustomerGlu.getInstance().isSentryEnabled()) {
+      /*  if (CustomerGlu.getInstance().isSentryEnabled()) {
             Sentry.setUser(null);
-        }
+        }*/
     }
 
 
@@ -97,13 +85,13 @@ public class SentryHelper {
      * @param exception
      */
     public void captureSentryEvent(Exception exception) {
-        if (CustomerGlu.getInstance().isSentryEnabled()) {
+      /*  if (CustomerGlu.getInstance().isSentryEnabled()) {
             try {
                 Sentry.captureException(exception);
             } catch (Exception sentryException) {
 
             }
-        }
+        }*/
     }
 
 }

@@ -57,6 +57,7 @@ public class MiddleDialog extends BaseActivity {
     CountDownTimer cTimer = null;
     String darkMode = "darkMode=false";
     private ProgressLottieView progressLottieView;
+    String campaignId = "";
 
     @Override
     public void onAttachedToWindow() {
@@ -125,6 +126,9 @@ public class MiddleDialog extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.middle_dialog);
         findViews();
+        if (getIntent().getStringExtra("campaignId") != null) {
+            campaignId = getIntent().getStringExtra("campaignId");
+        }
         if (getIntent().getStringExtra("isHyperLink") != null && getIntent().getStringExtra("isHyperLink").equalsIgnoreCase("true")) {
 
             progressLottieView.setVisibility(View.GONE);
@@ -149,6 +153,7 @@ public class MiddleDialog extends BaseActivity {
             }
         });
         try {
+
             if (getIntent().getStringExtra("notification") != null) {
                 String data = getIntent().getStringExtra("notification");
                 JSONObject jsonObject = new JSONObject(data);
@@ -161,7 +166,11 @@ public class MiddleDialog extends BaseActivity {
                 nudgeData.put("nudge_id", jsonObject.getString("nudge_id"));
                 nudgeData.put("click_action", jsonObject.getString("click_action"));
                 nudgeData.put("campaign_id", jsonObject.getString("campaign_id"));
-                CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, nudgeData);
+                if (jsonObject.has("campaign_id") && !jsonObject.getString("campaign_id").isEmpty()) {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, jsonObject.getString("campaign_id"), nudgeData);
+                } else {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, "", nudgeData);
+                }
             }
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
@@ -211,6 +220,8 @@ public class MiddleDialog extends BaseActivity {
 
             }
             finalData.put("webview_layout", CGConstants.MIDDLE_POPUP);
+            finalData.put("campaignId", campaignId);
+
             setUpWebView();
         } catch (Exception e) {
             printErrorLogs(e.toString());
@@ -234,7 +245,7 @@ public class MiddleDialog extends BaseActivity {
         printDebugLogs(" Activity Destroyed");
         finalData.put("webview_url", final_url);
 
-        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, finalData);
+        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
         super.onDestroy();
 
     }
@@ -297,7 +308,7 @@ public class MiddleDialog extends BaseActivity {
         layoutParams.leftMargin = 20;
         layoutParams.rightMargin = 20;
         card.setLayoutParams(layoutParams);
-        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
+        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData, this));
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setInitialScale(1);
         webView.getSettings().setDomStorageEnabled(true);

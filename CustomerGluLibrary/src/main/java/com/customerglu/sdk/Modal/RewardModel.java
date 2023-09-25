@@ -1,6 +1,7 @@
 package com.customerglu.sdk.Modal;
 
 import java.util.List;
+import java.util.Objects;
 
 public class RewardModel {
     public String getMessage() {
@@ -17,6 +18,10 @@ public class RewardModel {
         this.defaultUrl = defaultUrl;
         this.defaultBanner = defaultBanner;
         this.campaigns = campaigns;
+    }
+
+    public RewardModel() {
+        
     }
 
     public String getSuccess() {
@@ -182,5 +187,17 @@ public class RewardModel {
         String userCampaignStatus;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RewardModel)) return false;
+        RewardModel that = (RewardModel) o;
+        return Objects.equals(getSuccess(), that.getSuccess()) && Objects.equals(getMessage(), that.getMessage()) && Objects.equals(getDefaultUrl(), that.getDefaultUrl()) && Objects.equals(getDefaultBanner(), that.getDefaultBanner()) && Objects.equals(getCampaigns(), that.getCampaigns());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getSuccess(), getMessage(), getDefaultUrl(), getDefaultBanner(), getCampaigns());
+    }
 }
 

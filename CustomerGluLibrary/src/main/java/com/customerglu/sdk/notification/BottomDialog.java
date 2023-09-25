@@ -59,7 +59,7 @@ public class BottomDialog extends BaseActivity {
     CountDownTimer cTimer = null;
     String darkMode = "darkMode=false";
     ProgressLottieView progressLottieView;
-
+    String campaignId = "";
 
     @Override
     public void onAttachedToWindow() {
@@ -127,6 +127,9 @@ public class BottomDialog extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.bottom_dialog);
         findViews();
+        if (getIntent().getStringExtra("campaignId") != null) {
+            campaignId = getIntent().getStringExtra("campaignId");
+        }
         if (getIntent().getStringExtra("isHyperLink") != null && getIntent().getStringExtra("isHyperLink").equalsIgnoreCase("true")) {
 
             progressLottieView.setVisibility(View.GONE);
@@ -163,7 +166,11 @@ public class BottomDialog extends BaseActivity {
                 nudgeData.put("nudge_id", jsonObject.getString("nudge_id"));
                 nudgeData.put("click_action", jsonObject.getString("click_action"));
                 nudgeData.put("campaign_id", jsonObject.getString("campaign_id"));
-                CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, nudgeData);
+                if (jsonObject.has("campaign_id") && !jsonObject.getString("campaign_id").isEmpty()) {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, jsonObject.getString("campaign_id"), nudgeData);
+                } else {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, "", nudgeData);
+                }
             }
             if (getIntent().getStringExtra("closeOnDeepLink") != null && getIntent().getStringExtra("closeOnDeepLink").equalsIgnoreCase("true")) {
                 String val = getIntent().getStringExtra("closeOnDeepLink");
@@ -213,6 +220,7 @@ public class BottomDialog extends BaseActivity {
 
             }
             finalData.put("webview_layout", CGConstants.BOTTOM_POPUP);
+            finalData.put("campaignId", campaignId);
             setUpWebView();
         } catch (Exception e) {
             cancelTimer();
@@ -236,7 +244,7 @@ public class BottomDialog extends BaseActivity {
         printDebugLogs(" Activity Destroyed");
         finalData.put("webview_url", final_url);
 
-        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, finalData);
+        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
         super.onDestroy();
 
     }
@@ -282,7 +290,7 @@ public class BottomDialog extends BaseActivity {
         if (!CustomerGlu.configure_loading_screen_color.isEmpty()) {
             card.setBackgroundColor(Color.parseColor(CustomerGlu.configure_loading_screen_color));
         }
-        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
+        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData, this));
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setInitialScale(1);
         webView.getSettings().setLoadWithOverviewMode(true);

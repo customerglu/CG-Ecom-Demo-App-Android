@@ -81,6 +81,21 @@ public class Prefs {
 
     }
 
+    public static <GenericClass> GenericClass getSavedObjectFromPreference(Context context, String key, Type classType) {
+        sharedPreferences = context.getSharedPreferences("CacheNew", Context.MODE_PRIVATE);
+        final Gson gson = new Gson();
+        return gson.fromJson(sharedPreferences.getString(key, ""), classType);
+
+    }
+
+    public static void saveObjectToSharedPreference(Context context, String key, Object object) {
+        sharedPreferences = context.getSharedPreferences("CacheNew", Context.MODE_PRIVATE);
+        SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
+        final Gson gson = new Gson();
+        String serializedObject = gson.toJson(object);
+        sharedPreferencesEditor.putString(key, serializedObject);
+        sharedPreferencesEditor.apply();
+    }
 
 //    public static String getOldEncKey(Context contextGetKey, String Key) {
 //        try {

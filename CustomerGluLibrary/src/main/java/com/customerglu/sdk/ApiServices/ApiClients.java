@@ -18,11 +18,12 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class ApiClients {
     public static String bearer_token = "";
     public static Retrofit retrofit = null;
-    private static Retrofit retrofit1 = null;
+    public static Retrofit StringRetrofit = null;
     private static OkHttpClient okHttpClient1;
 
 
@@ -33,15 +34,31 @@ public class ApiClients {
 
         initOkHttp_token();
 
-        if (retrofit1 == null) {
-            retrofit1 = new Retrofit.Builder()
+        if (retrofit == null) {
+            retrofit = new Retrofit.Builder()
                     .baseUrl(BaseUrl)
                     .client(okHttpClient1)
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }
-        return retrofit1;
+        return retrofit;
+    }
+
+    public static Retrofit getStringBuilder() {
+
+
+        initOkHttp_token();
+
+        if (StringRetrofit == null) {
+            StringRetrofit = new Retrofit.Builder()
+                    .baseUrl(BaseUrl)
+                    .client(okHttpClient1)
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                    .addConverterFactory(ScalarsConverterFactory.create()) // Convert response to a string
+                    .build();
+        }
+        return StringRetrofit;
     }
 
     private static void initOkHttp_token() {

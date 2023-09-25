@@ -189,7 +189,7 @@ public class EmbeddedViewJavaScriptInterface {
                 } else if (type.equalsIgnoreCase("CAMPAIGN")) {
                     CustomerGlu.getInstance().loadCampaignById(context, campaignId, nudgeConfiguration);
                 } else {
-                    CustomerGlu.getInstance().displayCGNudge(context, url, nudgeConfiguration);
+                    CustomerGlu.getInstance().displayCGNudge(context, url, "", nudgeConfiguration);
                 }
 
             }

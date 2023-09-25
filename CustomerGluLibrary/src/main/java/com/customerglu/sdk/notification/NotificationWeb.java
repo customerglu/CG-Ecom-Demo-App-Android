@@ -55,6 +55,7 @@ public class NotificationWeb extends BaseActivity {
     String darkMode = "darkMode=false";
     private ProgressLottieView progressLottieView;
     String statusBarColor = "";
+    String campaignId = "";
 
     @Override
     public void onAttachedToWindow() {
@@ -143,6 +144,9 @@ public class NotificationWeb extends BaseActivity {
         }
         setContentView(R.layout.web_activity);
         findViews();
+        if (getIntent().getStringExtra("campaignId") != null) {
+            campaignId = getIntent().getStringExtra("campaignId");
+        }
         if (getIntent().getStringExtra("isHyperLink") != null && getIntent().getStringExtra("isHyperLink").equalsIgnoreCase("true")) {
 
             progressLottieView.setVisibility(View.GONE);
@@ -183,7 +187,11 @@ public class NotificationWeb extends BaseActivity {
                 nudgeData.put("nudge_id", jsonObject.getString("nudge_id"));
                 nudgeData.put("click_action", jsonObject.getString("click_action"));
                 nudgeData.put("campaign_id", jsonObject.getString("campaign_id"));
-                CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, nudgeData);
+                if (jsonObject.has("campaign_id") && !jsonObject.getString("campaign_id").isEmpty()) {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, jsonObject.getString("campaign_id"), nudgeData);
+                } else {
+                    CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), PUSH_NOTIFICATION_CLICK, "", nudgeData);
+                }
             }
 
 
@@ -198,6 +206,7 @@ public class NotificationWeb extends BaseActivity {
             finalData.put("relative_height", "100");
             finalData.put("absolute_height", "0");
             finalData.put("webview_layout", CGConstants.Full_NOTIFICATION);
+            finalData.put("campaignId", campaignId);
             setUpWebView();
         } catch (Exception e) {
             cancelTimer();
@@ -224,7 +233,7 @@ public class NotificationWeb extends BaseActivity {
         printDebugLogs(" Activity Destroyed");
         finalData.put("webview_url", final_url);
 
-        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, finalData);
+        CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
         super.onDestroy();
 
     }
@@ -259,26 +268,26 @@ public class NotificationWeb extends BaseActivity {
         final_url = url;
 
         printDebugLogs(url);
-        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData));
+        webView.setWebViewClient(new CGWebClient(getApplicationContext(), finalData, this));
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setInitialScale(1);
         webView.getSettings().setLoadWithOverviewMode(true);
         webView.getSettings().setUseWideViewPort(true);
         webView.getSettings().setDomStorageEnabled(true);
-        webView.addJavascriptInterface(new WebViewJavaScriptInterface(getApplicationContext(), this, closeOnDeepLink), "app"); // **IMPORTANT** call it app
+        webView.addJavascriptInterface(new WebViewJavaScriptInterface(getApplicationContext(), this, closeOnDeepLink, webView), "app"); // **IMPORTANT** call it app
         try {
             URL checkurl = new URL(url);
             if (checkurl.getQuery() == null) {
                 darkMode = "?" + darkMode;
             } else {
                 darkMode = "&" + darkMode;
-
             }
-            // Toast.makeText(OpenCustomerGluWeb.this, "cg" + url.getQuery(), Toast.LENGTH_SHORT).show();
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
+
         webView.loadUrl(validateURL(url + darkMode));
+
 
     }
 

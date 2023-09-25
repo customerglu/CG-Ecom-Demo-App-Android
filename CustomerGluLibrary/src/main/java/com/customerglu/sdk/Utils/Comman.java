@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -58,6 +59,9 @@ public class Comman {
         return ApiClients.getClient_token().create(ApiInterface.class);
     }
 
+    public static ApiInterface getApiStringBuilder() {
+        return ApiClients.getStringBuilder().create(ApiInterface.class);
+    }
 
     public static String storeZip(Context context) {
         ContextWrapper contextWrapper = new ContextWrapper(context);
@@ -247,6 +251,17 @@ public class Comman {
 
     }
 
+    public static String arrayListStringConvertor(ArrayList<String> data) {
+
+        StringBuffer sb = new StringBuffer();
+
+        for (String s : data) {
+            sb.append(s);
+            sb.append(" ");
+        }
+
+        return sb.toString();
+    }
 
     private static SecretKey generateAESSecretKey(String password) {
         try {

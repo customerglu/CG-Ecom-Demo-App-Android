@@ -320,7 +320,7 @@ public class CGEmbedView extends BaseRelativeLayout {
         }
         nudgeData.put("entry_point_content", entry_point_content);
         nudgeData.put("entry_point_container", entryPointsDataList.getMobileData().getContainer().getType());
-        CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, nudgeData);
+        CustomerGlu.getInstance().cgAnalyticsEventManager(context, ENTRY_POINT_LOAD, entryPointsDataList.getMobileData().getContent().get(0).getCampaignId(), nudgeData);
     }
 
     @Override

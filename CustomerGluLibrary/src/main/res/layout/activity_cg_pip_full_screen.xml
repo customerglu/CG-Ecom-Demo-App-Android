@@ -21,7 +21,7 @@
         android:layout_height="32dp"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
-        android:src="@drawable/ic_back"
+        android:src="@drawable/ic_back_cg"
         android:tint="@color/white"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

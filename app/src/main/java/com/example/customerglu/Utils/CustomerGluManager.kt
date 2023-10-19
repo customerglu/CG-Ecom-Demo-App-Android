@@ -47,26 +47,8 @@ object CustomerGluManager {
                             if (jsonObject.has("deepLink")) {
 
                                 var deeplink = jsonObject.get("deepLink")
-                              //  Toast.makeText(context, ""+deeplink, Toast.LENGTH_SHORT).show()
-                                if (deeplink.equals("customerglu://profile")) {
-                                    navigateToActivity(context,Constants.Profile)
+                                Toast.makeText(context, ""+deeplink, Toast.LENGTH_SHORT).show()
 
-                                } else if (deeplink.equals("customerglu://cart")) {
-                                    navigateToActivity(context,Constants.Cart)
-
-                                } else if(deeplink.equals("customerglu://wishlist"))
-                                {
-                                    navigateToActivity(context,Constants.Wishlist)
-
-                                }else if(deeplink.equals("customerglu://categories"))
-                                {
-                                    navigateToActivity(context,Constants.Categories)
-                                }
-
-                                else {
-                                    navigateToActivity(context,Constants.Home)
-
-                                }
                             }
                         }
 
@@ -78,13 +60,10 @@ object CustomerGluManager {
                             val data = intent.getStringExtra("data")
                             val jsonObject = JSONObject(data)
                                Log.e("Analytics ", "" + jsonObject);
-                            //  Toast.makeText(context, "Analytics " + jsonObject, Toast.LENGTH_SHORT).show();
                         }
                         if (intent.action.equals("CUSTOMERGLU_BANNER_LOADED", ignoreCase = true)) {
                             val data = intent.getStringExtra("data")
 
-                            //   Toast.makeText(getApplicationContext(), data, Toast.LENGTH_LONG).show();
-                            // banner.setVisibility(GONE);
                         }
 
                         if (intent.action.equals("CG_INVALID_CAMPAIGN_ID", ignoreCase = true)) {
@@ -129,7 +108,8 @@ object CustomerGluManager {
                     )
                 }
 
-               context.startActivity(intent)            }
+               context.startActivity(intent)
+            }
 
             override fun onFail(message: String?) {
                  println(message)
@@ -148,7 +128,6 @@ object CustomerGluManager {
     {
         CustomerGlu.getInstance().enableAnalyticsEvent(true);
     }
-
 
     fun openWallet(context: Context,nudgeConfiguration: NudgeConfiguration = NudgeConfiguration())
     {
@@ -278,6 +257,11 @@ object CustomerGluManager {
     fun openWalletAsFallback(value: Boolean)
     {
         CustomerGlu.getInstance().openWalletAsFallback(value)
+    }
+
+    fun validateCampaign(campaignId: String)
+    {
+        CustomerGlu.getInstance().isCampaignValid(campaignId)
     }
 
 }

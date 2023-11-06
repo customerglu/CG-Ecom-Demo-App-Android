@@ -29,7 +29,7 @@
         android:theme="@style/Theme.BuyNow">
         <meta-data
             android:name="CUSTOMERGLU_WRITE_KEY"
-            android:value="@string/demo_write_key" />
+            android:value="YOUR_WRITE_KEY" />
 
         <service
             android:name=".MyFirebaseMessagingService"

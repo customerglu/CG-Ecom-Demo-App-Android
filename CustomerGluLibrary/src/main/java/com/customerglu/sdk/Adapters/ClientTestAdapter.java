@@ -1,9 +1,6 @@
 package com.customerglu.sdk.Adapters;
 
 
-import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
-
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -14,10 +11,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.R;
 import com.customerglu.sdk.Utils.CGConstants;
@@ -26,6 +19,13 @@ import com.customerglu.sdk.clienttesting.ClientTestingModel;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.recyclerview.widget.RecyclerView;
+
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 public class ClientTestAdapter extends RecyclerView.Adapter<ClientTestAdapter.UnderShop> {
 

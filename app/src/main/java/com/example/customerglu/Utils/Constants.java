@@ -9,4 +9,5 @@ public class Constants {
     public static String Wishlist = "Wishlist";
     public static String Categories = "Categories";
     public static String NavigateTo = "NavigateTo";
+    public static String userId = "userId";
 }

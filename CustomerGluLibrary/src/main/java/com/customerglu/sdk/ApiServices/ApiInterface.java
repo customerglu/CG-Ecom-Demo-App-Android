@@ -18,6 +18,7 @@ import com.google.gson.JsonObject;
 
 import java.util.Map;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -134,6 +135,9 @@ public interface ApiInterface {
             @Header("Authorization") String token,
             @Body ProgramFilterModel data
     );
+
+    @GET
+    Call<ResponseBody> downloadVideo(@Url String fileUrl);
 
 
 }

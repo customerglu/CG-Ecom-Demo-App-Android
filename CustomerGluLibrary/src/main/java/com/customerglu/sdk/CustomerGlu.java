@@ -77,6 +77,7 @@ import static com.customerglu.sdk.Utils.CGConstants.NOTIFICATION_LOAD;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_DEEPLINK;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_WALLET;
 import static com.customerglu.sdk.Utils.CGConstants.OPEN_WEBLINK;
+import static com.customerglu.sdk.Utils.CGConstants.PIP_DATE;
 import static com.customerglu.sdk.Utils.CGConstants.POPUP_DATE;
 import static com.customerglu.sdk.Utils.CGConstants.PUSH_NOTIFICATION_CLICK;
 import static com.customerglu.sdk.Utils.CGConstants.SSL_CERTIFICATE_STRING;
@@ -112,6 +113,7 @@ import android.net.http.SslCertificate;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.text.Html;
 import android.util.Base64;
 import android.util.Log;
@@ -164,6 +166,7 @@ import com.customerglu.sdk.notification.BottomDialog;
 import com.customerglu.sdk.notification.BottomSheet;
 import com.customerglu.sdk.notification.MiddleDialog;
 import com.customerglu.sdk.notification.NotificationWeb;
+import com.customerglu.sdk.pip.PIPHelper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -274,7 +277,7 @@ public class CustomerGlu {
 //    List<String> popupallowedList;
     public static String dismiss_trigger = "UI_BUTTON";
     public static String cg_app_platform = "ANDROID";
-    public static String cg_sdk_version = "2.3.14";
+    public static String cg_sdk_version = "2.4.1";
     private static String writeKey = "";
     public static boolean debugEnvironment = false;
     public static String darkStatusBarColor;
@@ -302,9 +305,12 @@ public class CustomerGlu {
     public static boolean isHyperLinkUrl = false;
     public static boolean sslPinningEnable = true;
     public static SslCertificate sslCertificate;
-    public static boolean euiProxyEnabled = true;
+    public static boolean euiProxyEnabled = false;
     public static CGHelper cgHelper;
-    PictureInPicture pictureInPicture;
+    public static PictureInPicture pictureInPicture;
+    public static int currentVideoPosition = 0;
+    static PIPHelper pipHelper;
+    private boolean isPIPEnabled = true;
 
     private CustomerGlu() {
         s = "CustomerGlu Singleton class";
@@ -332,6 +338,7 @@ public class CustomerGlu {
             campaignIdList = new ArrayList<>();
             euiCallbackHandler = new EUICallbackHelper();
             cgHelper = CGHelper.getInstance();
+            pipHelper = PIPHelper.getInstance();
         }
 
         return single_instance;
@@ -1174,6 +1181,15 @@ public class CustomerGlu {
 
     }
 
+    public void addMarginForPIP(int horizontal, int vertical, PIPHelper.DISPLAY_UNIT_TYPE display_unit_type) {
+        PIPHelper pipHelper = PIPHelper.getInstance();
+        pipHelper.addMarginsForPIP(horizontal, vertical, display_unit_type);
+    }
+
+    public void addDelayForPIP(int delay) {
+        PIPHelper pipHelper = PIPHelper.getInstance();
+        pipHelper.setDelay(delay);
+    }
 
     private void executeDeepLink(DeepLinkWormholeModel.DeepLinkData deepLinkData, String type) {
         String campaignId = "";
@@ -1475,13 +1491,67 @@ public class CustomerGlu {
         }
         if (currentActivity != null) {
             EntryPointManager.getInstance(activity, currentScreenName).setScreenName(currentScreenName);
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N && isPIPEnabled) {
+                showPIP(activity, currentScreenName);
+            }
         }
     }
 
-    public void showPIP(Activity activity) {
-        if (pictureInPicture == null) {
-            pictureInPicture = new PictureInPicture(activity);
+    public void setPIPEnabled(Activity activity, boolean enabled) {
+        isPIPEnabled = enabled;
+    }
+
+    public boolean isPIPEnabled() {
+        return isPIPEnabled;
+    }
+
+    public void dismissPIP() {
+        if (pictureInPicture != null) {
+            pictureInPicture.removePIPView();
         }
+    }
+
+    private void showPIP(Activity activity, String screenName) {
+        boolean removePIP = true;
+        if (pictureInPicture == null) {
+            pictureInPicture = new PictureInPicture(activity, screenName);
+        } else {
+            if (pipHelper.allowedActivityList != null && pipHelper.disAllowedActivityList != null) {
+                List<String> allowedActivityList = pipHelper.allowedActivityList;
+                List<String> disAllowedActivityList = pipHelper.disAllowedActivityList;
+
+                if (allowedActivityList.size() > 0 && disAllowedActivityList.size() > 0) {
+                    if (!disAllowedActivityList.contains(screenName)) {
+                        removePIP = false;
+                        resumePIPView();
+                    }
+                } else if (allowedActivityList.size() > 0) {
+                    if (allowedActivityList.contains(screenName)) {
+                        removePIP = false;
+                        resumePIPView();
+                    }
+                } else if (disAllowedActivityList.size() > 0) {
+                    if (!disAllowedActivityList.contains(screenName)) {
+                        resumePIPView();
+                    }
+                }
+            }
+
+            if (removePIP) {
+                pictureInPicture.hidePIPView();
+//                pictureInPicture = null;
+                //   removePIPView(activity);
+            }
+        }
+    }
+
+
+    private void resumePIPView() {
+        Runnable runnable = () -> {
+            pictureInPicture.showPIPView();
+            pictureInPicture.initializeMediaSession(currentVideoPosition);
+        };
+        new Handler().postDelayed(runnable, pipHelper.getPIPDelay());
     }
 
     /**
@@ -2137,8 +2207,9 @@ public class CustomerGlu {
                                         @Override
                                         public void onResponse(Call<RegisterModal> call, Response<RegisterModal> response) {
                                             printDebugLogs("Registration API " + response.code());
-                                            ArrayList<MetaData> responseMetaData = new ArrayList<>();
                                             String responseBody = gson.toJson(response.body());
+                                            printDebugLogs("Registration response " + responseBody);
+                                            ArrayList<MetaData> responseMetaData = new ArrayList<>();
                                             responseMetaData.add(new MetaData("Registration API code", "" + response.code()));
                                             responseMetaData.add(new MetaData("Registration API response body", "" + responseBody));
                                             diagnosticsHelper.sendDiagnosticsReport(CG_METRICS_SDK_REGISTER_RESPONSE, CGConstants.CG_LOGGING_EVENTS.METRICS, responseMetaData);
@@ -2216,14 +2287,11 @@ public class CustomerGlu {
                                                             @Override
                                                             public void onSuccess(RewardModel rewardModel) {
 
-                                                                printDebugLogs(" campaigns load successfully");
 
                                                                 callBack.onSuccess(registerModal);
-                                                                printDebugLogs("new campaign id " + campaignIds);
                                                                 if (euiProxyEnabled) {
 
                                                                     if (!oldCampaignId.equalsIgnoreCase(campaignIds) || euiCallbackHandler.rewardData.isEmpty() || euiCallbackHandler.programData.isEmpty()) {
-                                                                        printDebugLogs("Doing Reward and program  call");
                                                                         euiCallbackHandler.getProgramData();
                                                                         euiCallbackHandler.getRewardData();
                                                                     }
@@ -3805,7 +3873,6 @@ public class CustomerGlu {
                 }
             }
             if (euiProxyEnabled) {
-
                 campaignIds = arrayListStringConvertor(campaignIdList);
                 Prefs.putKey(globalContext, CGConstants.CAMPAIGN_ID_STRING, campaignIds);
             }
@@ -5675,6 +5742,7 @@ public class CustomerGlu {
         Prefs.putEncKey(context, IS_LOGIN, "");
         Prefs.putEncKey(context, ENCRYPTED_CUSTOMERGLU_USER_ID, "");
         Prefs.putEncKey(context, ANONYMOUSID, "");
+        Prefs.putEncKey(context, PIP_DATE, "");
         myThread = 0;
         cgUserData = null;
         entryPointsModel = null;
@@ -5687,6 +5755,7 @@ public class CustomerGlu {
         LoadCampaignETAG = "";
         campaignIdList = new ArrayList<>();
         campaignIds = "";
+        pictureInPicture = null;
         euiCallbackHandler.programData = "";
         euiCallbackHandler.rewardData = "";
         File zip = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);

@@ -5,7 +5,8 @@
     <application>
         <activity
             android:name=".entrypoints.CGPiPFullScreenActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/CGFullScreenTheme" />
 
         <activity
             android:name=".notification.NotificationWeb"
@@ -20,21 +21,19 @@
         </activity>
         <activity
             android:name=".notification.BottomSheet"
-            android:theme="@style/Theme.Transparent"></activity>
+            android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".notification.BottomDialog"
-            android:theme="@style/Theme.Transparent"></activity>
+            android:theme="@style/Theme.Transparent" />
         <activity
             android:name=".notification.MiddleDialog"
-            android:theme="@style/Theme.Transparent"></activity>
+            android:theme="@style/Theme.Transparent" />
         <activity
             android:name=".clienttesting.ClientTestingPage"
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".MediaSessionPlaybackActivity"
-            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
-            android:supportsPictureInPicture="true" />
+
+
         <meta-data
             android:name="io.sentry.auto-init"
             android:value="false" />
@@ -42,15 +41,18 @@
             android:name="io.sentry.dsn"
             android:value="https://examplePublicKey@o0.ingest.sentry.io/0" />
 
-        <provider
-            android:name=".Utils.CGFileProvider"
-            android:authorities="${applicationId}.Utils.CGFileProvider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/cg_provider_path" />
-        </provider>
+        <!--        <provider-->
+        <!--            android:name=".Utils.CGFileProvider"-->
+        <!--            android:authorities="${applicationId}.Utils.CGFileProvider"-->
+        <!--            android:exported="false"-->
+        <!--            android:grantUriPermissions="true">-->
+
+        <!--            <meta-data-->
+        <!--                android:name="android.support.FILE_PROVIDER_PATHS"-->
+        <!--                android:resource="@xml/cg_provider_path" />-->
+
+        <!--        </provider>-->
+
     </application>
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

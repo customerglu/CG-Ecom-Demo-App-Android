@@ -294,13 +294,11 @@ class LoginActivity : AppCompatActivity() {
 
             Prefs.putKey(applicationContext,"writeKey",clientWriteKey)
 //            CustomerGlu.getInstance().initializeSdk(applicationContext)
-       CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
 
-       //    CustomerGluManager.registerUser(context = applicationContext,userData)
+           CustomerGluManager.registerUser(context = applicationContext,userData)
             CustomerGlu.getInstance()
                 .registerDevice(applicationContext, userData, object : DataListner {
                     override fun onSuccess(registerModal: RegisterModal) {
-                        CustomerGlu.getInstance().gluSDKDebuggingMode(applicationContext, true)
                         //    progressBar.visibility = GONE
                         intent = Intent(applicationContext, HomeActivity::class.java)
                         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)

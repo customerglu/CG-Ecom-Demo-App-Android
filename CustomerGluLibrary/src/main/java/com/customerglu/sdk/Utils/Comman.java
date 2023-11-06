@@ -1,13 +1,12 @@
 package com.customerglu.sdk.Utils;
 
-import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.webkit.WebResourceResponse;
 
@@ -37,6 +36,8 @@ import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import static com.customerglu.sdk.Utils.CGConstants.ERROR_URL;
 
 public class Comman {
 
@@ -324,4 +325,15 @@ public class Comman {
 
         return hexString.toString();
     }
+
+
+    public static float convertPixelsToDp(float px, Context context) {
+        return px / ((float) context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
+
+    public static float convertDpToPixel(float dp, Context context) {
+        return dp * ((float) context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
+
+
 }

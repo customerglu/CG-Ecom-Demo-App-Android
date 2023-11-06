@@ -63,7 +63,6 @@ public class EUICallbackHelper {
         Comman.getApiToken().getPrograms("Bearer " + token, programFilterModel).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                printErrorLogs("Program data");
 
 
                 if (response.body() != null) {
@@ -92,7 +91,6 @@ public class EUICallbackHelper {
         Comman.getApiToken().getRewards("Bearer " + token, programFilterModel).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                printErrorLogs("Reward data");
                 if (response.body() != null) {
                     JsonObject jsonObject = response.body();
 
@@ -147,7 +145,7 @@ public class EUICallbackHelper {
 
 
         } catch (Exception e) {
-
+            printErrorLogs("JS method callback failure" + e);
         }
 
     }

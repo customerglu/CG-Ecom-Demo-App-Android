@@ -42,7 +42,7 @@ import java.util.Map;
 public class NotificationWeb extends BaseActivity {
 
 
-    public static boolean closeOnDeepLink = false;
+    public boolean closeOnDeepLink = false;
     String url = "";
     RelativeLayout main;
     ProgressBar pg;
@@ -56,6 +56,7 @@ public class NotificationWeb extends BaseActivity {
     private ProgressLottieView progressLottieView;
     String statusBarColor = "";
     String campaignId = "";
+    boolean isBroadCastRegistered = false;
 
     @Override
     public void onAttachedToWindow() {
@@ -87,12 +88,16 @@ public class NotificationWeb extends BaseActivity {
 
         };
         registerReceiver(broadcastReceiver, new IntentFilter("HIDE_LOADER"));
+        isBroadCastRegistered = true;
     }
 
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        unregisterReceiver(broadcastReceiver);
+        if (broadcastReceiver != null && isBroadCastRegistered) {
+            unregisterReceiver(broadcastReceiver);
+            isBroadCastRegistered = false;
+        }
     }
 
     void startTimer() {
@@ -232,7 +237,11 @@ public class NotificationWeb extends BaseActivity {
     protected void onDestroy() {
         printDebugLogs(" Activity Destroyed");
         finalData.put("webview_url", final_url);
+        if (broadcastReceiver != null && isBroadCastRegistered) {
+            unregisterReceiver(broadcastReceiver);
+            isBroadCastRegistered = false;
 
+        }
         CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
         super.onDestroy();
 

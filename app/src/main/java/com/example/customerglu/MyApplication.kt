@@ -8,7 +8,11 @@ import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.os.Handler
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleObserver
+import com.customerglu.sdk.CustomerGlu
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.demoBanner.Banner
 import com.example.customerglu.demoBanner.BannerGravity
 import com.example.customerglu.demoBanner.DebugBanner
@@ -22,53 +26,13 @@ class MyApplication: Application()
         DebugBanner.init(application = this,
             banner = Banner(bannerText = "DEMO APP", bannerGravity = BannerGravity.END)
         )
- /*       mMessageReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                // Extract data included in the Intent
-                try {
+        CustomerGluManager.initializeSDK(applicationContext, debugMode = true)
 
-                    Handler().postDelayed({
-                        if (intent.action.equals("CUSTOMERGLU_DEEPLINK_EVENT", ignoreCase = true)) {
-                            val data = intent.getStringExtra("data")
-                            val jsonObject = JSONObject(data)
-                            if (jsonObject.has("deepLink")) {
 
-                                var deeplink = jsonObject.get("deepLink")
-
-                                if (deeplink.equals("customerglu://profile")) {
-                                    navigateToActivity(Constants.Profile)
-
-                                } else if (deeplink.equals("customerglu://cart")) {
-                                    navigateToActivity(Constants.Cart)
-
-                                } else if(deeplink.equals("customerglu://wishlist"))
-                                {
-                                    navigateToActivity(Constants.Wishlist)
-
-                                }else if(deeplink.equals("customerglu://categories"))
-                                {
-                                    navigateToActivity(Constants.Categories)
-                                }
-
-                                else {
-                                    navigateToActivity(Constants.Home)
-
-                                }
-
-                            }
-                            // Add the logic to redirect to appropriate page
-                        }
-                    }, 500)
-                } catch (e: Exception) {
-                    println(e)
-                }
-            }
-        }
-
-        registerReceiver(mMessageReceiver, IntentFilter("CUSTOMERGLU_DEEPLINK_EVENT"))
-
-*/
     }
+
+
+
 
 
 }

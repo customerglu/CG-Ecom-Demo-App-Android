@@ -5,31 +5,18 @@ import static com.customerglu.sdk.CustomerGlu.doLoadCampaignAndEntryPointCall;
 import static com.customerglu.sdk.CustomerGlu.euiCallbackHandler;
 import static com.customerglu.sdk.Utils.CGConstants.CG_DIAGNOSTICS_CTA_CALLBACK;
 import static com.customerglu.sdk.Utils.Comman.printDebugLogs;
-import static com.customerglu.sdk.Utils.Comman.printErrorLogs;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Parcelable;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
-import androidx.core.content.FileProvider;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.target.CustomTarget;
-import com.bumptech.glide.request.transition.Transition;
 import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Modal.MetaData;
 import com.customerglu.sdk.Modal.NudgeConfiguration;
@@ -38,18 +25,14 @@ import com.customerglu.sdk.Utils.CGConstants;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 public class WebViewJavaScriptInterface {
     private final Context context;
     private final Activity activity;
     private boolean closeOnDeeplink = true;
-    List imageUrls;
-    List imageUriList;
+    //    List imageUrls;
+//    List imageUriList;
     WebView webView;
     String text = "", image = "", channelName = "OTHERS";
     //ProgressDialog progressDialog;
@@ -81,7 +64,6 @@ public class WebViewJavaScriptInterface {
             metaData.add(new MetaData("CTA Callback Data", data.toString()));
             CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CGConstants.CG_DIAGNOSTICS_CTA_CALLBACK, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, metaData);
 
-            printDebugLogs("JS Event " + data.toString());
             ArrayList<MetaData> responseMetaData = new ArrayList();
             responseMetaData.add(new MetaData("JS CTA Event", data.toString()));
             CustomerGlu.diagnosticsHelper.sendDiagnosticsReport(CG_DIAGNOSTICS_CTA_CALLBACK, CGConstants.CG_LOGGING_EVENTS.DIAGNOSTICS, responseMetaData);
@@ -243,8 +225,8 @@ public class WebViewJavaScriptInterface {
 
                 }
 
-                imageUrls = new ArrayList<>();
-                imageUriList = new ArrayList<>();
+//                imageUrls = new ArrayList<>();
+//                imageUriList = new ArrayList<>();
 //                progressDialog = new ProgressDialog(activity);
 //                progressDialog.setMessage("Please wait");
 //                progressDialog.setCancelable(false);
@@ -258,22 +240,27 @@ public class WebViewJavaScriptInterface {
                     }
 
                 } else {
-
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageUrls.add(image);
-                            try {
-                                sendImagesToOtherApp();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                printErrorLogs("WebViewJavaInterface  " + e);
-
-                            }
-                        }
-
-                    }, 500);
+                    Intent intent = new Intent("CUSTOMERGLU_SHARE_EVENT");
+                    intent.putExtra("data", me.toString());
+                    activity.sendBroadcast(intent);
                 }
+//                else {
+//
+//                    new Handler().postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            imageUrls.add(image);
+//                            try {
+//                                sendImagesToOtherApp();
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                                printErrorLogs("WebViewJavaInterface  " + e);
+//
+//                            }
+//                        }
+//
+//                    }, 500);
+//                }
                 if (closeOnDeeplink) {
                     Log.e("Cust", "Webview closed");
                     activity.finish();
@@ -316,6 +303,7 @@ public class WebViewJavaScriptInterface {
         activity.startActivity(Intent.createChooser(intent, "share Image"));
     }
 
+/*
     private void sendImagesToOtherApp() throws IOException {
         //Picasso
         for (Object imgUrl : imageUrls) {
@@ -354,61 +342,62 @@ public class WebViewJavaScriptInterface {
 
         }
     }
+*/
 
-    private void shareImage(Bitmap bitmap) {
-        Intent shareIntent = null;
-        try {
-            shareIntent = ShareCompat.IntentBuilder.from(activity)
-                    .setType("image/*")
-                    .setChooserTitle("Share")
-                    .setText(text)
-                    .setStream(getLocalBitmapUri(context, bitmap))
-                    .getIntent();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if (shareIntent.resolveActivity(activity.getPackageManager()) != null) {
-            activity.startActivity(shareIntent);
-        }
-    }
+//    private void shareImage(Bitmap bitmap) {
+//        Intent shareIntent = null;
+//        try {
+//            shareIntent = ShareCompat.IntentBuilder.from(activity)
+//                    .setType("image/*")
+//                    .setChooserTitle("Share")
+//                    .setText(text)
+//                    .setStream(getLocalBitmapUri(context, bitmap))
+//                    .getIntent();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        if (shareIntent.resolveActivity(activity.getPackageManager()) != null) {
+//            activity.startActivity(shareIntent);
+//        }
+//    }
+//
+//    private Uri getLocalBitmapUri(Context mContext, Bitmap bitmap) throws IOException {
+//        Uri bmpUri = null;
+//        try {
+//            File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_Image" + System.currentTimeMillis() + ".jpg");
+//            FileOutputStream out = new FileOutputStream(file);
+//            bitmap.compress(Bitmap.CompressFormat.PNG, 85, out);
+//            out.flush();
+//            out.close();
+//            file.setReadable(true, false);
+//            bmpUri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
+//        } catch (Exception e) {
+//            printErrorLogs("" + e);
+//            e.printStackTrace();
+//        }
+//        return bmpUri;
+//    }
 
-    private Uri getLocalBitmapUri(Context mContext, Bitmap bitmap) throws IOException {
-        Uri bmpUri = null;
-        try {
-            File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_Image" + System.currentTimeMillis() + ".jpg");
-            FileOutputStream out = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 85, out);
-            out.flush();
-            out.close();
-            file.setReadable(true, false);
-            bmpUri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
-        } catch (Exception e) {
-            printErrorLogs("" + e);
-            e.printStackTrace();
-        }
-        return bmpUri;
-    }
-
-
-    public void shareImageToWhatsapp() {
-        //multiple image
-//     String smsNumber = “91”+ edtMob.getText().toString();
-        Intent intent = new Intent();
-        intent.setPackage("com.whatsapp");
-        intent.setAction(Intent.ACTION_SEND_MULTIPLE);
-//     intent.putExtra(“jid”, smsNumber + “@s.whatsapp.net”);
-        intent.putExtra(Intent.EXTRA_TEXT, text);
-        intent.setType("text/plain");
-        //    intent.putExtra(Intent.EXTRA_STREAM,imageUriList);
-//        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setType("image/*");
-        intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, (ArrayList<? extends Parcelable>) imageUriList);
-//        context.startActivity(Intent.createChooser(intent,"share Image"));
-        activity.startActivity(Intent.createChooser(intent, "share Image"));
-        imageUriList.clear();
-        imageUrls.clear();
-//        progressDialog.dismiss();
-    }
+//
+//    public void shareImageToWhatsapp() {
+//        //multiple image
+////     String smsNumber = “91”+ edtMob.getText().toString();
+//        Intent intent = new Intent();
+//        intent.setPackage("com.whatsapp");
+//        intent.setAction(Intent.ACTION_SEND_MULTIPLE);
+////     intent.putExtra(“jid”, smsNumber + “@s.whatsapp.net”);
+//        intent.putExtra(Intent.EXTRA_TEXT, text);
+//        intent.setType("text/plain");
+//        //    intent.putExtra(Intent.EXTRA_STREAM,imageUriList);
+////        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+////        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        intent.setType("image/*");
+//        intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, (ArrayList<? extends Parcelable>) imageUriList);
+////        context.startActivity(Intent.createChooser(intent,"share Image"));
+//        activity.startActivity(Intent.createChooser(intent, "share Image"));
+//        imageUriList.clear();
+//        imageUrls.clear();
+////        progressDialog.dismiss();
+//    }
 
 }

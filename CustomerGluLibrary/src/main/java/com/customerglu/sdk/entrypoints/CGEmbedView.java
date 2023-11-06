@@ -73,6 +73,7 @@ public class CGEmbedView extends BaseRelativeLayout {
     ProgressLottieView progressLottieView;
     String darkMode = "darkMode=false";
     String isEmbedded = "&isEmbedded=true";
+    boolean postAnalytics = true;
 
     public CGEmbedView(Context context, String id) {
         super(context);
@@ -243,8 +244,7 @@ public class CGEmbedView extends BaseRelativeLayout {
                                                                     campaign_id = entryPointsModel.getEntryPointsData().get(i).getMobileData().getContent().get(0).getCampaignId();
                                                                     absoluteHeight = entryPointsModel.getEntryPointsData().get(i).getMobileData().getContent().get(0).getAbsoluteHeight();
                                                                     relativeHeight = entryPointsModel.getEntryPointsData().get(i).getMobileData().getContent().get(0).getRelativeHeight();
-
-
+                                                                    
                                                                     if (relativeHeight > 0) {
                                                                         height = (int) screenHeight * (relativeHeight / 100);
                                                                     } else if (absoluteHeight > 0) {
@@ -252,7 +252,10 @@ public class CGEmbedView extends BaseRelativeLayout {
                                                                     } else {
                                                                         height = (int) screenHeight * 0.20;
                                                                     }
-                                                                    sendAnalytics(entryPointsModel.getEntryPointsData().get(i));
+                                                                    if (postAnalytics) {
+                                                                        sendAnalytics(entryPointsModel.getEntryPointsData().get(i));
+                                                                        postAnalytics = false;
+                                                                    }
                                                                     isPresent = true;
                                                                     findViews();
 

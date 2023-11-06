@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MiddleDialog extends BaseActivity {
-    public static boolean closeOnDeepLink = false;
+    public boolean closeOnDeepLink = false;
     String url = "";
     double opacity = 0.5, backgroundOpcatity = 0.5;
     RelativeLayout main;
@@ -58,6 +58,7 @@ public class MiddleDialog extends BaseActivity {
     String darkMode = "darkMode=false";
     private ProgressLottieView progressLottieView;
     String campaignId = "";
+    boolean isBroadCastRegistered = false;
 
     @Override
     public void onAttachedToWindow() {
@@ -90,12 +91,17 @@ public class MiddleDialog extends BaseActivity {
 
         };
         registerReceiver(broadcastReceiver, new IntentFilter("HIDE_LOADER"));
+        isBroadCastRegistered = true;
     }
 
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        unregisterReceiver(broadcastReceiver);
+        if (broadcastReceiver != null && isBroadCastRegistered) {
+            unregisterReceiver(broadcastReceiver);
+            isBroadCastRegistered = false;
+
+        }
     }
 
     void startTimer() {
@@ -246,6 +252,11 @@ public class MiddleDialog extends BaseActivity {
         finalData.put("webview_url", final_url);
 
         CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
+        if (broadcastReceiver != null && isBroadCastRegistered) {
+            unregisterReceiver(broadcastReceiver);
+            isBroadCastRegistered = false;
+
+        }
         super.onDestroy();
 
     }

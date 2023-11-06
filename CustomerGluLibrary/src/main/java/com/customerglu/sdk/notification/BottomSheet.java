@@ -42,7 +42,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BottomSheet extends BaseActivity {
-    public static boolean closeOnDeepLink = false;
+    public boolean closeOnDeepLink = false;
     String url;
     RelativeLayout main;
     WebView webView;
@@ -61,6 +61,7 @@ public class BottomSheet extends BaseActivity {
     ProgressLottieView progressLottieView;
     BottomSheetDialog dialog;
     String campaignId = "";
+    boolean isBroadCastRegistered = false;
 
     @Override
     public void onAttachedToWindow() {
@@ -92,12 +93,17 @@ public class BottomSheet extends BaseActivity {
 
         };
         registerReceiver(broadcastReceiver, new IntentFilter("HIDE_LOADER"));
+        isBroadCastRegistered = true;
     }
 
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        unregisterReceiver(broadcastReceiver);
+        if (broadcastReceiver != null && isBroadCastRegistered) {
+            unregisterReceiver(broadcastReceiver);
+            isBroadCastRegistered = false;
+
+        }
     }
 
 
@@ -237,8 +243,12 @@ public class BottomSheet extends BaseActivity {
     protected void onDestroy() {
         printDebugLogs(" Activity Destroyed");
         finalData.put("webview_url", final_url);
-
         CustomerGlu.getInstance().cgAnalyticsEventManager(getApplicationContext(), CGConstants.WEBVIEW_DISMISS, campaignId, finalData);
+        if (broadcastReceiver != null && isBroadCastRegistered) {
+            unregisterReceiver(broadcastReceiver);
+            isBroadCastRegistered = false;
+
+        }
         super.onDestroy();
 
         if (dialog != null && dialog.isShowing()) {

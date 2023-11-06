@@ -3,6 +3,10 @@
     <item name="close_view" type="id" />
     <item name="expand_view" type="id" />
     <item name="movie_view" type="id" />
+    <item name="audio_view" type="id" />
+    <item name="pip_card_view" type="id" />
+    <item name="pip_small_window" type="id" />
+    <item name="main_pip_view" type="id" />
 
 
 </resources>

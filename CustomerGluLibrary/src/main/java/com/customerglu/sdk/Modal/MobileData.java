@@ -68,7 +68,10 @@ public class MobileData {
         String width;
         String position;
         String borderRadius;
+        String vertical_padding;
+        String horizontal_padding;
         AndroidScreenData android;
+
 
         @Override
         public boolean equals(Object o) {
@@ -83,14 +86,32 @@ public class MobileData {
             return Objects.hash(getType(), getBannerId(), getHeight(), getWidth(), getPosition(), getBorderRadius(), getAndroid());
         }
 
-        public Container(String type, String bannerId, String height, String width, String position, String borderRadius, AndroidScreenData android) {
+        public Container(String type, String bannerId, String height, String width, String position, String borderRadius, String vertical_padding, String horizontal_padding, AndroidScreenData android) {
             this.type = type;
             this.bannerId = bannerId;
             this.height = height;
             this.width = width;
             this.position = position;
             this.borderRadius = borderRadius;
+            this.vertical_padding = vertical_padding;
+            this.horizontal_padding = horizontal_padding;
             this.android = android;
+        }
+
+        public String getVertical_padding() {
+            return vertical_padding;
+        }
+
+        public void setVertical_padding(String vertical_padding) {
+            this.vertical_padding = vertical_padding;
+        }
+
+        public String getHorizontal_padding() {
+            return horizontal_padding;
+        }
+
+        public void setHorizontal_padding(String horizontal_padding) {
+            this.horizontal_padding = horizontal_padding;
         }
 
         public AndroidScreenData getAndroid() {
@@ -179,14 +200,15 @@ public class MobileData {
     }
 
     public class Conditions {
-        int delay;
+        Integer delay;
         boolean autoScroll;
         int autoScrollSpeed;
-        boolean draggable;
+        Boolean draggable;
         String backgroundOpacity;
         int priority;
         String backendValidations;
         ShowCount showCount;
+        PIPConfig pip;
 
         @Override
         public boolean equals(Object o) {
@@ -201,15 +223,24 @@ public class MobileData {
             return Objects.hash(getDelay(), isAutoScroll(), getAutoScrollSpeed(), isDraggable(), getBackgroundOpacity(), getPriority(), getShowCount());
         }
 
-        public Conditions(int delay, boolean autoScroll, String backendValidations, int autoScrollSpeed, boolean draggable, String backgroundOpacity, int priority, ShowCount showCount) {
+        public Conditions(Integer delay, boolean autoScroll, int autoScrollSpeed, Boolean draggable, String backgroundOpacity, int priority, String backendValidations, ShowCount showCount, PIPConfig pip) {
             this.delay = delay;
             this.autoScroll = autoScroll;
             this.autoScrollSpeed = autoScrollSpeed;
             this.draggable = draggable;
-            this.backendValidations = backendValidations;
             this.backgroundOpacity = backgroundOpacity;
             this.priority = priority;
+            this.backendValidations = backendValidations;
             this.showCount = showCount;
+            this.pip = pip;
+        }
+
+        public PIPConfig getPip() {
+            return pip;
+        }
+
+        public void setPip(PIPConfig pip) {
+            this.pip = pip;
         }
 
         public String getBackendValidations() {
@@ -228,11 +259,11 @@ public class MobileData {
             this.showCount = showCount;
         }
 
-        public int getDelay() {
+        public Integer getDelay() {
             return delay;
         }
 
-        public void setDelay(int delay) {
+        public void setDelay(Integer delay) {
             this.delay = delay;
         }
 
@@ -248,7 +279,7 @@ public class MobileData {
             this.autoScrollSpeed = autoScrollSpeed;
         }
 
-        public boolean getDraggable() {
+        public Boolean getDraggable() {
             return draggable;
         }
 
@@ -286,7 +317,7 @@ public class MobileData {
 
         public class ShowCount {
             int count;
-            boolean dailyRefresh;
+            Boolean dailyRefresh;
 
             @Override
             public boolean equals(Object o) {
@@ -301,7 +332,7 @@ public class MobileData {
                 return Objects.hash(getCount(), isDailyRefresh());
             }
 
-            public ShowCount(int count, boolean dailyRefresh) {
+            public ShowCount(int count, Boolean dailyRefresh) {
                 this.count = count;
                 this.dailyRefresh = dailyRefresh;
             }
@@ -314,11 +345,11 @@ public class MobileData {
                 this.count = count;
             }
 
-            public boolean isDailyRefresh() {
+            public Boolean isDailyRefresh() {
                 return dailyRefresh;
             }
 
-            public void setDailyRefresh(boolean dailyRefresh) {
+            public void setDailyRefresh(Boolean dailyRefresh) {
                 this.dailyRefresh = dailyRefresh;
             }
 

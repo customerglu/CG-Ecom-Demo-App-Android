@@ -14,8 +14,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.customerglu.sdk.CustomerGlu
+import com.customerglu.sdk.pip.PIPHelper
 import com.example.customerglu.Fragment.*
 import com.example.customerglu.Utils.Constants
+import com.example.customerglu.Utils.CustomerGluManager
 import com.example.customerglu.Utils.Prefs
 import com.example.customerglu.db.FavItemViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -33,7 +35,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         onClickRequestPermission()
 
         getWindow()?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-
+        CustomerGluManager.setUpCTACallback(applicationContext)
         var type =  intent.getStringExtra(Constants.NavigateTo)
 
         CustomerGlu.getInstance().openWalletAsFallback(true)
@@ -56,7 +58,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         }
         var key = Prefs.getKey(applicationContext,"writeKey")
         Log.e("CG","key "+key);
-        if (!key.isEmpty())
+        if (key.isNotEmpty())
         {
             Log.e("CG","has key "+key);
             CustomerGlu.setWriteKey(key)
@@ -64,18 +66,18 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             Log.e("CG","has key "+Constants.sandbox_key);
             CustomerGlu.setWriteKey(Constants.sandbox_key)
         }
-        CustomerGlu.getInstance().initializeSdk(applicationContext)
-        CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
-        CustomerGlu.getInstance().gluSDKDebuggingMode(applicationContext, true)
+
         CustomerGlu.getInstance().enableEntryPoints(applicationContext, true)
     }
 
     override fun onResume() {
         super.onResume()
-        CustomerGlu.getInstance().showPIP(this)
-      //  addDebugBanner()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        CustomerGluManager.unregisterCGReceivers(applicationContext)
+    }
 
 
     private val requestPermissionLauncher =
@@ -175,8 +177,7 @@ class HomeActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                 }
             }
         }
-        CustomerGlu.getInstance().initializeSdk(applicationContext)
-        CustomerGlu.getInstance().setupCGDeepLinkIntentData(this)
+        CustomerGluManager.setCGDeeplinkData(this)
 
     }
 

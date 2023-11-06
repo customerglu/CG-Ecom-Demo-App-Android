@@ -27,6 +27,10 @@
         android:largeHeap="true"
         android:hardwareAccelerated="true"
         android:theme="@style/Theme.BuyNow">
+        <meta-data
+            android:name="CUSTOMERGLU_WRITE_KEY"
+            android:value="@string/demo_write_key" />
+
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">

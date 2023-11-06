@@ -22,6 +22,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
+        android:visibility="gone"
         android:layout_marginHorizontal="20dp"
         android:id="@+id/test_env"
         android:layout_width="match_parent"

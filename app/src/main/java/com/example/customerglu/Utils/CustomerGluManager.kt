@@ -29,11 +29,10 @@ object CustomerGluManager {
     {
         CustomerGlu.getInstance().initializeSdk(context)
         CustomerGlu.getInstance().gluSDKDebuggingMode(context,debugMode)
-        setUpCTACallback(context)
 
     }
 
-    private fun setUpCTACallback(context: Context) {
+     fun setUpCTACallback(context: Context) {
 
         mMessageReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -59,7 +58,7 @@ object CustomerGluManager {
                         ) {
                             val data = intent.getStringExtra("data")
                             val jsonObject = JSONObject(data)
-                               Log.e("Analytics ", "" + jsonObject);
+                            Log.e("Analytics ", "" + jsonObject);
                         }
                         if (intent.action.equals("CUSTOMERGLU_BANNER_LOADED", ignoreCase = true)) {
                             val data = intent.getStringExtra("data")
@@ -87,28 +86,37 @@ object CustomerGluManager {
 
     }
 
+    fun unregisterCGReceivers(context: Context)
+    {
+        if (::mMessageReceiver.isInitialized) {
+            context.unregisterReceiver(mMessageReceiver)
+        }
+    }
+
     fun enableEntryPoints(context: Context){
         CustomerGlu.getInstance().enableEntryPoints(context,true)
     }
 
-    fun registerUser(context: Context,userData:HashMap<String,Any>)
+    fun registerUser(context: Context,userData:HashMap<String,Any>, fromLogin:Boolean = false)
     {
         CustomerGlu.getInstance().registerDevice(context,userData,object : DataListner {
 
             override fun onSuccess(registerModal: RegisterModal?) {
-                val intent = Intent(context, HomeActivity::class.java)
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                // toast("Registered")
-                if (registerModal != null) {
-                    Prefs.putKey(
-                        context,
-                        "userId",
-                        registerModal.data.getUser().userId
-                    )
-                }
+                if (fromLogin) {
+                    val intent = Intent(context, HomeActivity::class.java)
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // toast("Registered")
+                    if (registerModal != null) {
+                        Prefs.putKey(
+                            context,
+                            Constants.userId,
+                            registerModal.data.getUser().userId
+                        )
+                    }
 
-               context.startActivity(intent)
+                    context.startActivity(intent)
+                }
             }
 
             override fun onFail(message: String?) {

@@ -91,7 +91,7 @@ public class CGConstants {
     public static final String CG_PLATFORM_VALUE = "android-native-sdk";
     public static final String CG_PLATFORM_KEY = "cg-app-platform";
     public static final String CG_SDK_VERSION_KEY = "cg-sdk-version";
-    public static final String CG_SDK_VERSION_VAL = "2.3.14";
+    public static final String CG_SDK_VERSION_VAL = "2.4.1";
     public static final String MQTT_SERVER_HOST = "hermes.customerglu.com";
     public static final String DEV_MQTT_SERVER_HOST = "dev-hermes.customerglu.com";
 
@@ -230,6 +230,8 @@ public class CGConstants {
     public static final String TRACK = "track";
     public static final String FLOATING_DATE = "floating_daily_date";
     public static final String POPUP_DATE = "daily_date";
+    public static final String PIP_DATE = "Pip_date";
+    public static final String PIP_DISMISSED = "Pip_dismissed";
     public static final String ANONYMOUSID = "anonymous_id";
     public static final String IS_LOGIN = "is_login";
     public static final String CG_USER_DATA = "cg_user_data";
@@ -242,6 +244,7 @@ public class CGConstants {
     public static final String ENTRY_POINT_LOAD = "ENTRY_POINT_LOAD";
     public static final String ENTRY_POINT_DISMISS = "ENTRY_POINT_DISMISS";
     public static final String ENTRY_POINT_CLICK = "ENTRY_POINT_CLICK";
+    public static final String PIP_ENTRY_POINT_CTA_CLICK = "PIP_ENTRY_POINT_CTA_CLICK";
     public static final String PHYSICAL_BUTTON = "PHYSICAL_BUTTON";
     public static final String UI_BUTTON = "UI_BUTTON";
     public static final String CTA_REDIRECT = "CTA_REDIRECT";

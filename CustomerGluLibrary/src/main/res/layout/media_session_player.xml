@@ -4,15 +4,13 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".MediaSessionPlaybackActivity">
+    android:orientation="vertical">
 
-    <com.customerglu.sdk.MovieView
+    <com.customerglu.sdk.pip.MovieView
         android:id="@+id/movie"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
-        android:src="@raw/puppy"
         android:title="@string/title_bigbuckbunny" />
 
     <ScrollView

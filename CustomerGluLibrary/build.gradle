@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 30
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 30
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -33,7 +33,7 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.core:core-ktx:1.6.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'androidx.test:core:1.4.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
@@ -79,7 +79,7 @@ afterEvaluate {
 
                 groupId = 'com.customerglu'
                 artifactId = 'sdk'
-                version = '2.3.15'
+                version = '2.4.1'
             }
         }
     }

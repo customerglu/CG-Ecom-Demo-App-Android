@@ -97,7 +97,7 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:+'
     implementation 'com.google.firebase:firebase-messaging-ktx:23.0.6'
     implementation 'com.google.firebase:firebase-dynamic-links-ktx:21.0.1'
-    implementation project(path: ':CustomerGluLibrary')
+  //  implementation project(path: ':CustomerGluLibrary')
 
     kapt 'com.github.bumptech.glide:compiler:4.12.0'
 
@@ -127,7 +127,7 @@ dependencies {
 
     // CustomerGlu
 //    implementation 'com.github.customerglu:CG-SDK-Android:15deb59973'
- //   implementation 'com.github.customerglu:CG-SDK-Android:v2.3.1'
+       implementation 'com.github.customerglu:CG-SDK-Android:v2.4.2'
     // QR Scanner
     implementation 'com.github.yuriy-budiyev:code-scanner:2.3.2'
 

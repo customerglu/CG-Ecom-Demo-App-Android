@@ -14,7 +14,6 @@ import com.customerglu.sdk.CustomerGlu;
 import com.customerglu.sdk.Interface.DataListner;
 import com.customerglu.sdk.Modal.RegisterModal;
 import com.customerglu.sdk.Utils.Prefs;
-import com.customerglu.sdk.Web.OpenCustomerGluWeb;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;

@@ -26,8 +26,8 @@ android {
         applicationId "com.customerglu.cgapp"
         minSdkVersion 21
         targetSdkVersion 33
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.0.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -96,7 +96,8 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:+'
     implementation 'com.google.firebase:firebase-messaging-ktx:23.0.6'
     implementation 'com.google.firebase:firebase-dynamic-links-ktx:21.0.1'
-    implementation project(path: ':CustomerGluLibrary')
+//    implementation project(path: ':CustomerGluLibrary')
+    implementation 'com.github.customerglu:CG-SDK-Android:2b7b71d5be'
 
     kapt 'com.github.bumptech.glide:compiler:4.12.0'
 
